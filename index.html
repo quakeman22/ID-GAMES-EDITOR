@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>ID Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* Corpo */
+body { 
+    font-family: 'Courier New', monospace; 
+    background:#0d0d0d; 
+    margin:0; 
+    overflow-x:hidden; 
+    color:#ff4c4c; 
+}
+
+/* Cabeçalho estilo Doom */
+.app-header { 
+    position:fixed; 
+    top:0; left:0; width:100%; 
+    background:#1a0000; 
+    color:#ff0000; 
+    z-index:50; 
+    padding:1rem 1rem; 
+    display:flex; 
+    justify-content:space-between; 
+    align-items:center; 
+    box-shadow:0 4px 15px rgba(0,0,0,0.8);
+    font-family: 'Impact', sans-serif;
+    font-size:1.3rem;
+    text-shadow: 3px 3px 0 #000;
+}
+.app-header .title { text-align:center; flex:1; }
+
+/* Botão de informação */
+#infoBtn {
+    width:32px; height:32px; 
+    background:url('https://img.icons8.com/m_outlined/512/FFFFFF/info.png') no-repeat center;
+    background-size:contain;
+    border:none; cursor:pointer;
+    transition: transform 0.2s ease;
+}
+#infoBtn:hover { transform: scale(1.1); }
+
+/* Container do editor */
+.editor-container { 
+    margin-top:6rem; 
+    max-width:750px; 
+    width:90%; 
+    margin-left:auto; 
+    margin-right:auto; 
+    display:flex; 
+    flex-direction:column; 
+    gap:0.75rem; 
+}
+
+/* Barra de pesquisa */
+#search {
+    background:#2b0a0a;
+    color:#ff6b6b;
+    border:2px solid #880000;
+    border-radius:0.5rem;
+    padding:0.5rem;
+    font-family:'Courier New', monospace;
+    font-size:0.95rem;
+    width:100%;
+    transition:border 0.3s ease, background 0.3s ease;
+}
+#search:focus { border-color:#ff1a1a; outline:none; background:#3b0d0d; }
+
+/* Lista de textos */
+#list {
+    background:#1b0b0b;
+    border:2px solid #660000;
+    border-radius:0.5rem;
+    padding:1rem;
+    max-height:60vh;
+    overflow-y:auto;
+    box-shadow: inset 0 0 15px #330000;
+}
+
+/* Barra de rolagem customizada */
+#list::-webkit-scrollbar { width:12px; }
+#list::-webkit-scrollbar-track { background:#0d0d0d; }
+#list::-webkit-scrollbar-thumb { background:#ff0000; border-radius:6px; border:3px solid #0d0d0d; }
+
+/* Textareas estilo Doom Infernal */
+.modern-textarea {
+    background:#2b0a0a;
+    color:#ff6b6b;
+    border:2px solid #880000;
+    border-radius:0.5rem;
+    padding:0.75rem;
+    font-family:'Courier New', monospace;
+    font-size:0.95rem;
+    width:100%;
+    resize:none;
+    transition:border 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+    text-shadow: 1px 1px 2px #000;
+}
+.modern-textarea:focus { 
+    border-color:#ff1a1a; 
+    outline:none; 
+    background:#3b0d0d;
+    box-shadow:0 0 10px #ff0000;
+}
+
+/* Botões estilo pulsante */
+button {
+    font-family: 'Impact', sans-serif;
+    font-weight:bold;
+    text-shadow:1px 1px 0 #000;
+    border-radius:0.5rem;
+    border:2px solid #ff1a1a;
+    background:#660000;
+    color:#ff4c4c;
+    padding:0.5rem 1rem;
+    cursor:pointer;
+    transition: all 0.3s ease;
+}
+button:hover {
+    background:#ff0000;
+    color:#1b0d0d;
+    box-shadow: 0 0 15px #ff0000, 0 0 20px #ff1a1a;
+    transform: scale(1.05);
+}
+
+/* Input arquivo */
+#file {
+    background:#330000;
+    color:#ff4c4c;
+    border:2px solid #880000;
+    padding:0.5rem;
+    border-radius:0.5rem;
+}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="title">ID Editor - Doom Infernal</div>
+  <button id="infoBtn" title="Informações"></button>
+</div>
+
+<div class="editor-container mt-4">
+  <h2 class="text-lg font-semibold text-red-400">Textos para editar</h2>
+  <input id="file" type="file" accept=".bin" class="mb-2">
+  <input id="search" type="text" placeholder="🔍 Procurar texto..." class="mb-2">
+  <div id="list"></div>
+  <button id="save" disabled>💀 Salvar alterações</button>
+</div>
+
+<!-- Modal Informações -->
+<div id="infoModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+  <div class="bg-[#1a0000] rounded-xl shadow-lg max-w-sm w-full p-5 relative modal text-white">
+    <h2 class="text-xl font-bold mb-3">ID Editor</h2>
+    <p class="mb-3">Desenvolvedor e idealizador: <b>QUAKEMAN</b></p>
+    <p class="mb-3">- Comunidade J2me FANS -<br>2024/25</p>
+    <div class="flex gap-2 mb-3">
+      <a href="https://discord.gg/WyJtDDqJ9c" target="_blank" class="flex-1 text-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm">Discord</a>
+      <a href="https://quakeman0.blogspot.com" target="_blank" class="flex-1 text-center bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 text-sm">Site</a>
+    </div>
+    <button id="closeInfo" class="absolute top-2 right-2 text-gray-400 hover:text-gray-200 text-lg font-bold">&times;</button>
+  </div>
+</div>
+
+<script>
+let bytes;
+let blocks = [];
+let headerBytes = [];
+
+// Abrir arquivo
+document.getElementById('file').addEventListener('change', e=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+        bytes = new Uint8Array(ev.target.result);
+        headerBytes = [bytes[0], bytes[1]];
+        parseFile();
+        document.getElementById('save').disabled=false;
+    };
+    reader.readAsArrayBuffer(f);
+});
+
+// Parsear arquivo
+function parseFile(){
+    blocks = [];
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+    let offset = 2;
+
+    while(offset + 2 <= bytes.length){
+        let size = bytes[offset] + (bytes[offset+1]<<8);
+        offset += 2;
+        let sep = 0;
+        if(bytes[offset] === 0x00){
+            sep = 1;
+            offset += 1;
+        }
+        const textBytes = bytes.slice(offset, offset + size);
+        let text = String.fromCharCode(...textBytes);
+
+        const card = document.createElement('div');
+        card.className="mb-3";
+        const ta = document.createElement('textarea');
+        ta.className="modern-textarea";
+        ta.value = text;
+        ta.rows = Math.max(1, text.split('\n').length);
+        ta.oninput = ()=>blocks.find(b=>b.input===ta).text=ta.value;
+        card.appendChild(ta);
+        list.appendChild(card);
+
+        blocks.push({input: ta, text, sep});
+        offset += size;
+    }
+}
+
+// Salvar arquivo
+document.getElementById('save').addEventListener('click', ()=>{
+    const out = [...headerBytes];
+    for(const b of blocks){
+        const text = b.text;
+        const size = text.length;
+        out.push(size & 0xFF, (size >> 8) & 0xFF);
+        if(b.sep) out.push(0x00);
+        for(let i=0;i<text.length;i++) out.push(text.charCodeAt(i));
+    }
+    const blob = new Blob([new Uint8Array(out)], {type:'application/octet-stream'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'editado_id_editor.bin';
+    a.click();
+    URL.revokeObjectURL(a.href);
+});
+
+// Barra de pesquisa
+document.getElementById('search').addEventListener('input', e => {
+    const term = e.target.value.toLowerCase();
+    blocks.forEach(b => {
+        const card = b.input.parentElement;
+        card.style.display = b.text.toLowerCase().includes(term) ? '' : 'none';
+    });
+});
+
+// Modal de informações
+const infoModal = document.getElementById('infoModal');
+document.getElementById('infoBtn').addEventListener('click', ()=>{
+    infoModal.classList.remove('hidden'); 
+    infoModal.classList.add('flex'); 
+});
+document.getElementById('closeInfo').addEventListener('click', ()=>{
+    infoModal.classList.add('hidden'); 
+    infoModal.classList.remove('flex'); 
+});
+</script>
+</body>
+</html>
