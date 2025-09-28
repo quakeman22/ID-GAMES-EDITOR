@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>ID Editor - Desktop</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body {
+    font-family: 'Courier New', monospace;
+    background:#0d0d0d;
+    margin:0;
+    color:#ff4c4c;
+}
+
+/* Cabeçalho */
+.app-header {
+    position:fixed;
+    top:0; left:0; width:100%;
+    background:#1a0000;
+    color:#ff0000;
+    z-index:50;
+    padding:1rem;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:'Impact', sans-serif;
+    font-size:1.3rem;
+    text-shadow: 3px 3px 0 #000;
+}
+.app-header .title { flex:1; text-align:center; }
+.app-header button {
+    margin-left:0.5rem;
+}
+
+/* Container principal */
+.editor-container {
+    margin-top:6rem;
+    max-width:900px;
+    width:95%;
+    margin-left:auto;
+    margin-right:auto;
+    display:flex;
+    flex-direction:column;
+    gap:0.5rem;
+}
+
+/* Lista de textos */
+#list {
+    background:#1b0b0b;
+    border:2px solid #660000;
+    border-radius:0.5rem;
+    padding:1rem;
+    max-height:70vh;
+    overflow-y:auto;
+}
+#list::-webkit-scrollbar { width:12px; }
+#list::-webkit-scrollbar-track { background:#0d0d0d; }
+#list::-webkit-scrollbar-thumb { background:#ff0000; border-radius:6px; border:3px solid #0d0d0d; }
+
+/* Textareas */
+.modern-textarea {
+    background:#2b0a0a;
+    color:#ff6b6b;
+    border:2px solid #880000;
+    border-radius:0.5rem;
+    padding:0.75rem;
+    font-family:'Courier New', monospace;
+    font-size:0.95rem;
+    width:100%;
+    resize:none;
+    transition:border 0.3s, box-shadow 0.3s;
+    text-shadow:1px 1px 2px #000;
+}
+.modern-textarea:focus {
+    border-color:#ff1a1a;
+    outline:none;
+    background:#3b0d0d;
+    box-shadow:0 0 10px #ff0000;
+}
+
+/* Botões */
+button {
+    font-family: 'Impact', sans-serif;
+    font-weight:bold;
+    text-shadow:1px 1px 0 #000;
+    border-radius:0.5rem;
+    border:2px solid #ff1a1a;
+    background:#660000;
+    color:#ff4c4c;
+    padding:0.5rem 1rem;
+    cursor:pointer;
+    transition: all 0.3s;
+}
+button:hover {
+    background:#ff0000;
+    color:#1b0d0d;
+    box-shadow: 0 0 15px #ff0000, 0 0 20px #ff1a1a;
+    transform: scale(1.05);
+}
+
+/* Input arquivo */
+#file {
+    display:none;
+}
+
+</style>
+</head>
+<body>
+
+<div class="app-header">
+    <button id="openFileBtn">📂 Abrir</button>
+    <div class="title">ID Editor - Desktop</div>
+    <div>
+        <button id="infoBtn">ℹ️</button>
+        <button id="save" disabled>💾 Salvar</button>
+        <button id="exportBtn">📤 Exportar TXT</button>
+        <button id="importBtn">📥 Importar TXT</button>
+    </div>
+</div>
+
+<div class="editor-container">
+    <input type="file" id="file" accept=".bin">
+    <input type="file" id="importFile" accept=".txt" style="display:none">
+    <input type="text" id="search" placeholder="🔍 Pesquisar..." class="modern-textarea mb-2" style="height:auto;">
+    <div id="list"></div>
+</div>
+
+<script>
+let bytes;
+let headerBytes = [];
+let blocks = [];
+
+const fileInput = document.getElementById('file');
+const importInput = document.getElementById('importFile');
+const list = document.getElementById('list');
+const saveBtn = document.getElementById('save');
+const searchInput = document.getElementById('search');
+
+// Abrir arquivo
+document.getElementById('openFileBtn').addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', e=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+        bytes = new Uint8Array(ev.target.result);
+        headerBytes = [bytes[0], bytes[1]];
+        parseFile();
+        saveBtn.disabled=false;
+    };
+    reader.readAsArrayBuffer(f);
+});
+
+// Parse do arquivo
+function parseFile(){
+    blocks=[];
+    list.innerHTML='';
+    let offset=2;
+    while(offset + 2 <= bytes.length){
+        let size = bytes[offset] + (bytes[offset+1]<<8);
+        offset += 2;
+        let sep = 0;
+        if(bytes[offset] === 0x00){ sep=1; offset++; }
+        const textBytes = bytes.slice(offset, offset+size);
+        let text = String.fromCharCode(...textBytes);
+        addBlock(text, sep);
+        offset += size;
+    }
+}
+
+// Adiciona bloco na lista
+function addBlock(text, sep){
+    const card = document.createElement('div');
+    card.className="mb-2";
+    const ta = document.createElement('textarea');
+    ta.className="modern-textarea";
+    ta.value=text;
+    ta.rows=Math.max(1,text.split('\n').length);
+    ta.oninput=()=>blocks.find(b=>b.input===ta).text=ta.value;
+    card.appendChild(ta);
+    list.appendChild(card);
+    blocks.push({input:ta,text,sep});
+}
+
+// Salvar arquivo editado
+saveBtn.addEventListener('click', ()=>{
+    const out=[...headerBytes];
+    for(const b of blocks){
+        const size = b.text.length;
+        out.push(size & 0xFF,(size>>8)&0xFF);
+        if(b.sep) out.push(0x00);
+        for(let i=0;i<b.text.length;i++) out.push(b.text.charCodeAt(i));
+    }
+    const blob = new Blob([new Uint8Array(out)],{type:'application/octet-stream'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download='editado.bin';
+    a.click();
+    URL.revokeObjectURL(a.href);
+});
+
+// Pesquisa/filtro
+searchInput.addEventListener('input', ()=>{
+    const q = searchInput.value.toLowerCase();
+    list.childNodes.forEach((card, i)=>{
+        card.style.display = blocks[i].text.toLowerCase().includes(q)?'block':'none';
+    });
+});
+
+// Exportar TXT
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+    let txt = blocks.map(b=>b.text).join('\n===\n');
+    const blob = new Blob([txt], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='texts_export.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+});
+
+// Importar TXT
+document.getElementById('importBtn').addEventListener('click', ()=>importInput.click());
+importInput.addEventListener('change', e=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload=ev=>{
+        const txtBlocks = ev.target.result.split('\n===\n');
+        txtBlocks.forEach((t,i)=>{ if(blocks[i]) blocks[i].input.value=t; blocks[i].text=t; });
+    };
+    reader.readAsText(f);
+});
+
+// Informações
+document.getElementById('infoBtn').addEventListener('click', ()=>{
+    alert("ID Editor Desktop\n\nDesenvolvedor: QUAKEMAN\n- Comunidade J2me FANS - 2024/25\n\nDiscord: https://discord.gg/WyJtDDqJ9c\nSite: https://quakeman0.blogspot.com");
+});
+</script>
+</body>
+</html>

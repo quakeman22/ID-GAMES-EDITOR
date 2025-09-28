@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>ID Editor - Doom Infernal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body { font-family: 'Courier New', monospace; background:#0d0d0d; margin:0; overflow-x:hidden; color:#ff4c4c; }
+.app-header { position:fixed; top:0; left:0; width:100%; background:#1a0000; color:#ff0000; z-index:50; padding:1rem 1rem; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 15px rgba(0,0,0,0.8); font-family: 'Impact', sans-serif; font-size:1.3rem; text-shadow: 3px 3px 0 #000; }
+.app-header .title { text-align:center; flex:1; }
+.editor-container { margin-top:6rem; max-width:750px; width:90%; margin-left:auto; margin-right:auto; display:flex; flex-direction:column; gap:0.75rem; }
+#list { background:#1b0b0b; border:2px solid #660000; border-radius:0.5rem; padding:1rem; max-height:70vh; overflow-y:auto; box-shadow: inset 0 0 15px #330000; }
+#list::-webkit-scrollbar { width:12px; }
+#list::-webkit-scrollbar-track { background:#0d0d0d; }
+#list::-webkit-scrollbar-thumb { background:#ff0000; border-radius:6px; border:3px solid #0d0d0d; }
+.modern-textarea { background:#2b0a0a; color:#ff6b6b; border:2px solid #880000; border-radius:0.5rem; padding:0.75rem; font-family:'Courier New', monospace; font-size:0.95rem; width:100%; resize:none; transition:border 0.3s ease, background 0.3s ease, box-shadow 0.3s ease; text-shadow: 1px 1px 2px #000; }
+.modern-textarea:focus { border-color:#ff1a1a; outline:none; background:#3b0d0d; box-shadow:0 0 10px #ff0000; }
+button { font-family: 'Impact', sans-serif; font-weight:bold; text-shadow:1px 1px 0 #000; border-radius:0.5rem; border:2px solid #ff1a1a; background:#660000; color:#ff4c4c; padding:0.5rem 1rem; cursor:pointer; transition: all 0.3s ease; margin-right:0.5rem; }
+button:hover { background:#ff0000; color:#1b0d0d; box-shadow: 0 0 15px #ff0000, 0 0 20px #ff1a1a; transform: scale(1.05); }
+#file { background:#330000; color:#ff4c4c; border:2px solid #880000; padding:0.5rem; border-radius:0.5rem; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="title">ID Editor</div>
+  <button id="infoBtn" title="Informações">
+    <img src="https://img.icons8.com/m_outlined/512/FFFFFF/info.png" width="24" height="24"/>
+  </button>
+</div>
+
+<div class="editor-container mt-4">
+  <h2 class="text-lg font-semibold text-red-400">Textos para editar</h2>
+  <input id="file" type="file" accept=".bin" class="mb-2">
+  <div id="list"></div>
+  <div class="mt-2">
+    <button id="save" disabled>💀 Salvar alterações</button>
+    <button id="exportTxt" disabled>📤 Exportar Textos</button>
+    <button id="importTxt" disabled>📥 Importar Tradução</button>
+  </div>
+</div>
+
+<script>
+let bytes;
+let blocks = [];
+let headerBytes = [];
+
+// Info
+document.getElementById('infoBtn').addEventListener('click', ()=>{
+    alert("Desenvolvedor e idealizador:\nQUAKEMAN\n\n- Comunidade J2me FANS -\n2024/25\n\nSite: quakeman0.blogspot.com\nDiscord: https://discord.gg/WyJtDDqJ9c");
+});
+
+// Ler arquivo binário
+document.getElementById('file').addEventListener('change', e=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+        bytes = new Uint8Array(ev.target.result);
+        headerBytes = [bytes[0], bytes[1]];
+        parseFile();
+        document.getElementById('save').disabled=false;
+        document.getElementById('exportTxt').disabled=false;
+        document.getElementById('importTxt').disabled=false;
+    };
+    reader.readAsArrayBuffer(f);
+});
+
+function parseFile(){
+    blocks = [];
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+    let offset = 2;
+    let blockIndex = 0;
+
+    while(offset + 2 <= bytes.length){
+        let size = bytes[offset] + (bytes[offset+1]<<8);
+        offset += 2;
+        let sep = 0;
+        if(bytes[offset] === 0x00){
+            sep = 1;
+            offset += 1;
+        }
+        const textBytes = bytes.slice(offset, offset + size);
+        let text = String.fromCharCode(...textBytes);
+
+        const card = document.createElement('div');
+        card.className="mb-3";
+        const ta = document.createElement('textarea');
+        ta.className="modern-textarea";
+        ta.value = text;
+        ta.rows = Math.max(1, text.split('\n').length);
+        ta.oninput = ()=>blocks.find(b=>b.input===ta).text=ta.value;
+        card.appendChild(ta);
+        list.appendChild(card);
+
+        blocks.push({input: ta, text, sep, index:blockIndex});
+        offset += size;
+        blockIndex++;
+    }
+}
+
+// Salvar arquivo binário
+document.getElementById('save').addEventListener('click', ()=>{
+    const out = [...headerBytes];
+    for(const b of blocks){
+        const text = b.text;
+        const size = text.length;
+        out.push(size & 0xFF, (size >> 8) & 0xFF);
+        if(b.sep) out.push(0x00);
+        for(let i=0;i<text.length;i++) out.push(text.charCodeAt(i));
+    }
+    const blob = new Blob([new Uint8Array(out)], {type:'application/octet-stream'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'editado.bin';
+    a.click();
+    URL.revokeObjectURL(a.href);
+});
+
+// Exportar textos
+document.getElementById('exportTxt').addEventListener('click', ()=>{
+    let content = '';
+    for(const b of blocks){
+        content += `[${b.index}] ${b.text}\n`;
+    }
+    const blob = new Blob([content], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'textos_exportados.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+});
+
+// Importar tradução
+document.getElementById('importTxt').addEventListener('click', ()=>{
+    const f = document.createElement('input');
+    f.type='file';
+    f.accept='.txt';
+    f.onchange = e=>{
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = ev=>{
+            const lines = ev.target.result.split(/\r?\n/);
+            for(const line of lines){
+                const match = line.match(/^\[(\d+)\]\s*(.*)$/);
+                if(match){
+                    const idx = parseInt(match[1]);
+                    const txt = match[2];
+                    if(blocks[idx]) {
+                        blocks[idx].text = txt;
+                        blocks[idx].input.value = txt;
+                    }
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
+    f.click();
+});
+</script>
+
+</body>
+</html>

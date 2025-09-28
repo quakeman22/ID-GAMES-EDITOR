@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Editor .class Desktop</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#18181b; margin:0; color:#e0e0e0; }
+  .header { display:flex; justify-content:space-between; align-items:center; padding:1rem 2rem; background:#27272a; box-shadow:0 2px 5px rgba(0,0,0,0.3); }
+  .header .title { font-size:1.5rem; font-weight:bold; }
+  .btn { padding:0.5rem 1rem; border-radius:0.5rem; border:none; cursor:pointer; font-weight:500; }
+  .btn:hover { opacity:0.85; }
+  .btn-open { background:#3b82f6; color:white; }
+  .btn-save { background:#16a34a; color:white; }
+  .tabs { display:flex; border-bottom:1px solid #3a3a4a; margin-top:1rem; }
+  .tab { padding:0.75rem 1.5rem; cursor:pointer; font-weight:500; }
+  .tab.active { border-bottom:3px solid #5c6bc0; color:#5c6bc0; }
+  .tab-content { padding:1rem 2rem; max-height:70vh; overflow-y:auto; }
+  .textarea { width:100%; background:#1e1e2e; color:#e0e0e0; border:1px solid #3a3a4a; border-radius:0.75rem; padding:0.75rem; font-size:0.95rem; resize:none; margin-bottom:0.75rem; }
+  .textarea:focus { border-color:#5c6bc0; outline:none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">Editor de .class</div>
+  <div>
+    <button class="btn btn-open" id="openFileBtn">📂 Abrir</button>
+    <button class="btn btn-save" id="saveFileBtn" disabled>💾 Salvar</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="editor">Editor</div>
+  <div class="tab" data-tab="credits">Créditos</div>
+  <div class="tab" data-tab="info">Informações</div>
+</div>
+
+<div class="tab-content" id="editorTab">
+  <div id="textList"><p class="text-gray-500 text-center">Nenhum arquivo carregado.</p></div>
+</div>
+
+<div class="tab-content hidden" id="creditsTab">
+  <h2 class="text-xl font-bold mb-2">🎨 Créditos</h2>
+  <p>Editor de textos .class inspirado no trabalho de Quakeman0.</p>
+  <p><a href="https://discord.gg/du9v2FECkC" target="_blank" class="text-blue-400">Discord</a> | 
+     <a href="https://quakeman0.blogspot.com" target="_blank" class="text-green-400">Site</a></p>
+</div>
+
+<div class="tab-content hidden" id="infoTab">
+  <h2 class="text-xl font-bold mb-2">ℹ️ Informações</h2>
+  <p>Editor simples para modificar textos dentro de arquivos <code>.class</code>.</p>
+  <ul class="list-disc list-inside">
+    <li>Menu superior para abrir e salvar arquivos</li>
+    <li>Abas para alternar entre Editor, Créditos e Informações</li>
+  </ul>
+</div>
+
+<input type="file" id="fileInput" accept=".class" class="hidden">
+
+<script>
+let bytes, cpInfo;
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.add('hidden'));
+    document.getElementById(tab.dataset.tab + "Tab").classList.remove('hidden');
+  });
+});
+
+// Open file
+document.getElementById('openFileBtn').addEventListener('click', ()=>{
+  document.getElementById('fileInput').click();
+});
+
+// Save file
+document.getElementById('saveFileBtn').addEventListener('click', ()=>{
+  const newBytes = rebuildClass();
+  const blob = new Blob([newBytes], {type:'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'modified.class';
+  a.click();
+});
+
+// File reading
+document.getElementById('fileInput').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    bytes = new Uint8Array(ev.target.result);
+    parseClass();
+    renderList();
+    document.getElementById('saveFileBtn').disabled=false;
+  };
+  reader.readAsArrayBuffer(f);
+});
+
+// Parser functions
+function readU1(v,o){return v.getUint8(o);}
+function readU2(v,o){return v.getUint16(o,false);}
+function readU4(v,o){return v.getUint32(o,false);}
+
+function parseClass(){
+  const v = new DataView(bytes.buffer);
+  if(readU4(v,0)!==0xCAFEBABE) { alert("Arquivo inválido"); return; }
+  let cpCount = readU2(v,8);
+  let off = 10;
+  cpInfo = [];
+  for(let i=1;i<cpCount;i++){
+    const tag = readU1(v,off); off++;
+    const e = {i, tag, start: off-1};
+    if(tag===1){
+      const len = readU2(v,off); off+=2;
+      const s = bytes.subarray(off, off+len); off+=len;
+      e.text = new TextDecoder().decode(s);
+      e.len = len;
+    } else if(tag===5||tag===6){off+=8; i++;} 
+    else if(tag===3||tag===4){off+=4;} 
+    else if(tag===7||tag===8||tag===16){off+=2;}
+    else if(tag===9||tag===10||tag===11||tag===12||tag===18){off+=4;}
+    else if(tag===15){off+=3;}
+    else { console.log("Tag desconhecido", tag); }
+    e.end = off;
+    cpInfo.push(e);
+  }
+}
+
+function isLikelyDialogue(txt){
+  if(!txt) return false;
+  if(txt.length < 2) return false;
+  if(txt.startsWith("java/")) return false;
+  return true;
+}
+
+function renderList(){
+  const list = document.getElementById('textList');
+  list.innerHTML = '';
+  const dialogs = cpInfo.filter(e=>e.tag===1 && isLikelyDialogue(e.text));
+  if(dialogs.length===0){
+    list.innerHTML='<p class="text-gray-500 text-center">Nenhum diálogo/texto encontrado.</p>';
+    return;
+  }
+  dialogs.forEach(e=>{
+    const ta = document.createElement('textarea');
+    ta.value = e.text;
+    ta.className="textarea";
+    ta.oninput = ()=>e.text = ta.value;
+    list.appendChild(ta);
+  });
+}
+
+function rebuildClass(){
+  const out = [];
+  let pos=0;
+  function push(b){out.push(...b);}
+  push(bytes.subarray(0,10)); pos=10;
+  for(const e of cpInfo){
+    if(e.tag===1){
+      const enc = new TextEncoder().encode(e.text);
+      const buf = new Uint8Array(1+2+enc.length);
+      buf[0]=1; buf[1]=enc.length>>8; buf[2]=enc.length&0xFF;
+      buf.set(enc,3);
+      push(buf);
+    }else{
+      push(bytes.subarray(e.start, e.end));
+    }
+    pos=e.end;
+  }
+  push(bytes.subarray(pos));
+  return new Uint8Array(out);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Editor .class App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#18181b; margin:0; overflow-x:hidden; color:#e0e0e0; }
+  .app-header { position:fixed; top:0; left:0; width:100%; background:#27272a; color:white; z-index:50; padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.2);}
+  .app-header .title { font-weight:bold; font-size:1.1rem; text-align:center; flex:1; }
+
+  .editor-container { margin-top:6rem; max-width:600px; width:90%; margin-left:auto; margin-right:auto; display:flex; flex-direction:column; gap:0.75rem; }
+
+  #list {
+    background:#1f1f23;
+    border:1px solid #2e2e38;
+    border-radius:1rem;
+    padding:1rem;
+    max-height:60vh;
+    overflow-y:auto;
+  }
+
+  .modern-textarea {
+    background:#1e1e2e;
+    color:#e0e0e0;
+    border:1px solid #3a3a4a;
+    border-radius:1rem;
+    padding:0.75rem;
+    font-family:'Inter', sans-serif;
+    font-size:0.9rem;
+    width:100%;
+    resize:none;
+    transition:border 0.2s ease;
+  }
+  .modern-textarea:focus { border-color:#5c6bc0; outline:none; }
+
+  #sideMenu { position:fixed; top:0; right:-260px; width:260px; height:100%; background:#27272a; color:white; box-shadow:-3px 0 6px rgba(0,0,0,0.3); z-index:60; transition:right 0.3s ease; padding:1rem; display:flex; flex-direction:column; gap:1rem; }
+  #sideMenu.open { right:0; }
+  #sideMenu button,input[type=file]{ width:100%; }
+  #sideMenu .closeBtn { align-self:flex-end; background:none; color:#e0e0e0; font-size:1.5rem; font-weight:bold; cursor:pointer; }
+  #overlay { position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:55; display:none; }
+  #overlay.active { display:block; }
+</style>
+</head>
+<body>
+
+<!-- Barra superior -->
+<div class="app-header">
+  <div class="title">Editor de .class</div>
+  <button id="menuBtn" class="bg-gray-700 px-3 py-1 rounded-lg font-medium hover:bg-gray-600 text-sm">☰</button>
+</div>
+
+<!-- Overlay -->
+<div id="overlay"></div>
+
+<!-- Menu lateral -->
+<div id="sideMenu">
+  <button class="closeBtn" id="closeMenu">&times;</button>
+  <input id="file" type="file" accept=".class"
+    class="file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+  <button id="creditsBtn" class="bg-gray-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600">📜 Créditos</button>
+  <button id="infoBtn" class="bg-gray-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600">ℹ️ Informações</button>
+</div>
+
+<!-- Editor -->
+<div class="editor-container mt-4">
+  <h2 class="text-lg font-semibold text-gray-300">Textos para editar</h2>
+  <div id="list"></div>
+  <button id="save" disabled class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 mt-2">💾 Salvar alterações</button>
+</div>
+
+<!-- Modal de Créditos -->
+<div id="creditsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-[#27272a] rounded-xl shadow-lg max-w-xs w-full p-5 relative modal text-white">
+    <h2 class="text-xl font-bold mb-3">🎨 Créditos</h2>
+    <p class="mb-4 text-gray-300">Editor de textos .class criado por Quakeman0.</p>
+    <div class="flex gap-2 mb-3">
+      <a href="https://discord.gg/du9v2FECkC" target="_blank" class="flex-1 text-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm">Discord</a>
+      <a href="https://quakeman0.blogspot.com" target="_blank" class="flex-1 text-center bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 text-sm">Site</a>
+    </div>
+    <p class="text-sm text-gray-400">Obrigado por usar o editor!</p>
+    <button id="closeModal" class="absolute top-2 right-2 text-gray-400 hover:text-gray-200 text-lg font-bold">&times;</button>
+  </div>
+</div>
+
+<!-- Modal de Informações -->
+<div id="infoModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-[#27272a] rounded-xl shadow-lg max-w-sm w-full p-5 relative modal text-white">
+    <h2 class="text-xl font-bold mb-3">ℹ️ Sobre o Editor</h2>
+    <p class="mb-4 text-gray-300">
+      Este é um editor simples para modificar textos dentro de arquivos <code>.class</code>.  
+      Ele foi feito com foco em praticidade e em um visual minimalista, inspirado no estilo Android 15.
+    </p>
+    <h3 class="text-lg font-semibold mb-2">📌 Mudanças por versão</h3>
+    <ul class="list-disc list-inside text-gray-300 space-y-1 text-sm">
+      <li><b>V1:</b> Menu lateral para selecionar arquivos e botão de salvar.</li>
+      <li><b>V2:</b> Estilo minimalista melhorado e caixas de edição redesenhadas.</li>
+      <li><b>V3:</b> Adicionado modal de informações e créditos.</li>
+    </ul>
+    <button id="closeInfoModal" class="absolute top-2 right-2 text-gray-400 hover:text-gray-200 text-lg font-bold">&times;</button>
+  </div>
+</div>
+
+<script>
+let bytes, cpInfo;
+
+// Abrir menu lateral
+const menu = document.getElementById('sideMenu');
+const overlay = document.getElementById('overlay');
+document.getElementById('menuBtn').addEventListener('click', ()=>{
+  menu.classList.add('open');
+  overlay.classList.add('active');
+});
+function closeMenu(){
+  menu.classList.remove('open');
+  overlay.classList.remove('active');
+}
+document.getElementById('closeMenu').addEventListener('click', closeMenu);
+overlay.addEventListener('click', closeMenu);
+
+// Modal Créditos
+const creditsModal = document.getElementById('creditsModal');
+document.getElementById('creditsBtn').addEventListener('click', ()=>{
+  creditsModal.classList.remove('hidden'); 
+  creditsModal.classList.add('flex'); 
+  closeMenu();
+});
+document.getElementById('closeModal').addEventListener('click', ()=>{
+  creditsModal.classList.add('hidden'); 
+  creditsModal.classList.remove('flex'); 
+});
+
+// Modal Informações
+const infoModal = document.getElementById('infoModal');
+document.getElementById('infoBtn').addEventListener('click', ()=>{
+  infoModal.classList.remove('hidden'); 
+  infoModal.classList.add('flex'); 
+  closeMenu();
+});
+document.getElementById('closeInfoModal').addEventListener('click', ()=>{
+  infoModal.classList.add('hidden'); 
+  infoModal.classList.remove('flex'); 
+});
+
+// Leitura e salvamento
+document.getElementById('file').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    bytes = new Uint8Array(ev.target.result);
+    parseClass();
+    renderList();
+    document.getElementById('save').disabled=false;
+  };
+  reader.readAsArrayBuffer(f);
+});
+
+document.getElementById('save').addEventListener('click', ()=>{
+  const newBytes = rebuildClass();
+  const blob = new Blob([newBytes], {type:'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'modified.class';
+  a.click();
+});
+
+// Parser
+function readU1(v,o){return v.getUint8(o);}
+function readU2(v,o){return v.getUint16(o,false);}
+function readU4(v,o){return v.getUint32(o,false);}
+function parseClass(){
+  const v=new DataView(bytes.buffer);
+  if(readU4(v,0)!==0xCAFEBABE) throw Error("Arquivo inválido");
+  let cpCount=readU2(v,8);
+  let off=10;
+  cpInfo=[];
+  for(let i=1;i<cpCount;i++){
+    const tag=readU1(v,off); off++;
+    const e={i,tag,start:off-1};
+    if(tag===1){
+      const len=readU2(v,off); off+=2;
+      const s=bytes.subarray(off,off+len); off+=len;
+      e.text=new TextDecoder().decode(s);
+      e.len=len;
+    }else if(tag===5||tag===6){off+=8; i++;} 
+    else if(tag===3||tag===4){off+=4;} 
+    else if(tag===7||tag===8||tag===16){off+=2;}
+    else if(tag===9||tag===10||tag===11||tag===12||tag===18){off+=4;}
+    else if(tag===15){off+=3;}
+    else throw Error("Tag desconhecido "+tag);
+    e.end=off; cpInfo.push(e);
+  }
+}
+function isLikelyDialogue(txt){
+  if(!txt) return false;
+  if(txt.length < 2) return false;
+  if(txt.startsWith("java/")) return false; // só ignora libs internas
+  return true;
+}
+function renderList(){
+  const list=document.getElementById('list');
+  list.innerHTML='';
+  const dialogs = cpInfo.filter(e=>e.tag===1 && isLikelyDialogue(e.text));
+  if(dialogs.length===0){
+    list.innerHTML='<p class="text-gray-500 text-center">Nenhum diálogo/texto encontrado.</p>';
+    return;
+  }
+  dialogs.forEach(e=>{
+    const card=document.createElement('div');
+    card.className="mb-3";
+    const ta=document.createElement('textarea');
+    ta.value=e.text;
+    ta.className="modern-textarea";
+    ta.oninput=()=>e.text=ta.value;
+    card.appendChild(ta);
+    list.appendChild(card);
+  });
+}
+function rebuildClass(){
+  const out=[];
+  let pos=0;
+  function push(b){out.push(...b);}
+  push(bytes.subarray(0,10)); pos=10;
+  for(const e of cpInfo){
+    if(e.tag===1){
+      const enc=new TextEncoder().encode(e.text);
+      const buf=new Uint8Array(1+2+enc.length);
+      buf[0]=1; buf[1]=enc.length>>8; buf[2]=enc.length&0xFF;
+      buf.set(enc,3);
+      push(buf);
+    }else{
+      push(bytes.subarray(e.start,e.end));
+    }
+    pos=e.end;
+  }
+  push(bytes.subarray(pos));
+  return new Uint8Array(out);
+}
+</script>
+</body>
+</html>
