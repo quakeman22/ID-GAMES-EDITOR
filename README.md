@@ -11,7 +11,7 @@ Editor universal para arquivos de jogos baseados na engine do **Doom RPG**, como
 ## 🔥 Sobre
 
 O **ID Editor** é uma ferramenta estável e funcional para editar os textos internos desses jogos de forma fácil e rápida.  
-Ele permite abrir arquivos `.bin`, visualizar cada texto em caixas separadas, editar e salvar sem corromper os arquivos.
+Ele permite abrir arquivos `.srt`, visualizar cada texto em caixas separadas, editar e salvar sem corromper os arquivos.
 
 ---
 
@@ -21,15 +21,8 @@ Ele permite abrir arquivos `.bin`, visualizar cada texto em caixas separadas, ed
 - ✍️ Edição de textos em caixas separadas para cada diálogo ou string.  
 - 💾 Salvar alterações mantendo a integridade do arquivo.  
 - 🔍 Barra de pesquisa para localizar rapidamente qualquer texto.  
-- 💀 Visual estilo **Doom Infernal**, macabro e imersivo.  
-- ℹ️ Botão de informações com links do desenvolvedor.  
-
----
-
-## 🎨 Visual
-
-![Exemplo](https://i.imgur.com/SeuPrint.png)  
-*Cada texto aparece em caixas individuais, podendo ser editado facilmente.*
+- 💀 Visual estilo **Doom**. 
+- ℹ️ Botão de informações com links do desenvolvedor. 
 
 ---
 
