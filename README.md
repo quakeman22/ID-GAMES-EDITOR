@@ -3,8 +3,8 @@
 ![ID Editor](https://img.icons8.com/m_outlined/512/FFFFFF/info.png)
 
 Editor universal para arquivos de jogos baseados na engine do **Doom RPG**, como:  
-- Orcs and Elves  
-- Wolfenstein RPG  
+- Orcs and Elves  (Apenas menus)
+- Wolfenstein RPG  (Sem suporte)
 
 ---
 
