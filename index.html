@@ -230,7 +230,7 @@ document.getElementById('save').addEventListener('click', ()=>{
     const blob = new Blob([new Uint8Array(out)], {type:'application/octet-stream'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'editado_id_editor.bin';
+    a.download = 'editado.str';
     a.click();
     URL.revokeObjectURL(a.href);
 });
