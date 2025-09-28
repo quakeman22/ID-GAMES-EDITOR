@@ -35,7 +35,7 @@ Ele permite abrir arquivos `.bin`, visualizar cada texto em caixas separadas, ed
 
 ## 🛠️ Como usar
 
-1. Clique em **Choose File** e selecione o arquivo `.bin`.  
+1. Clique em **Selecionar arquivo** e selecione o arquivo `.srt`.  
 2. Todos os textos aparecerão em caixas separadas.  
 3. Edite o que quiser.  
 4. Clique em **💀 Salvar alterações** para gerar o arquivo modificado.
