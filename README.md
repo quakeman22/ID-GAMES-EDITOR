@@ -1,64 +1,64 @@
-# 💀 ID Editor
+# 🎮 ID Games Editors
 
-![ID Editor](https://img.icons8.com/m_outlined/512/FFFFFF/info.png)
+Bem-vindo ao **ID Games Editors**, um conjunto de editores universais para jogos desenvolvidos com a mesma engine do **Doom RPG**, como **Orcs And Elves (Apenas menus)** e **Wolfenstein RPG (Sem suporte)**.  
 
-Editor universal para arquivos de jogos baseados na engine do **Doom RPG**, como:  
-- Orcs and Elves  (Apenas menus)
-- Wolfenstein RPG  (Sem suporte)
+Depois de muitas horas de desenvolvimento, estes editores chegaram a uma versão **estável, funcional e acessível** para Desktop e Mobile.
 
 ---
 
-## ⚡ Status
+## 🛠 Editores Disponíveis
 
-![Version](https://img.shields.io/badge/version-1.0-red)
-![Status](https://img.shields.io/badge/status-stable-green)
-![License](https://img.shields.io/badge/license-MIT-blue)
+### 1️⃣ Doom Text Editor
+Editor para modificar textos dentro dos arquivos dos jogos da engine Doom RPG.
 
----
+- **Desktop:** [Abrir](doom-text-desktop.html)  
+- **Mobile:** [Abrir](doom-text-mobile.html)  
 
-## 🔥 Sobre
+### 2️⃣ Class Editor
+Editor para arquivos `.class` (Java/Bytecode), usado para modificar textos em jogos baseados em Java ME.
 
-O **ID Editor** é uma ferramenta estável e funcional para editar os textos internos desses jogos de forma fácil e rápida.  
-Ele permite abrir arquivos `.str`, visualizar cada texto em caixas separadas, editar e salvar sem corromper os arquivos.
-
----
-
-## 🛠️ Funcionalidades
-
-- 📂 Abrir arquivos binários compatíveis com a engine do Doom RPG  
-- ✍️ Edição de textos em caixas separadas para cada diálogo ou string  
-- 💾 Salvar alterações mantendo a integridade do arquivo  
-- 🔍 Barra de pesquisa para localizar rapidamente qualquer texto  
-- 💀 Visual estilo **Doom Infernal**, macabro e imersivo  
-- ℹ️ Botão de informações com links do desenvolvedor  
+- **Desktop:** [Abrir](class-editor-desktop.html)  
+- **Mobile:** [Abrir](class-editor-mobile.html)  
 
 ---
 
-## 📌 Como usar
+## ⚡ Funcionalidades Comuns
 
-1. Clique em **Selecionar arquivo** e selecione o arquivo `.str`  
-2. Todos os textos aparecerão em caixas separadas  
-3. Edite o que quiser  
-4. Clique em **💀 Salvar alterações** para gerar o arquivo modificado  
-
----
-
-## 👨‍💻 Desenvolvedor
-
-**QUAKEMAN** – Idealizador e desenvolvedor principal  
-- 🌐 Site: [quakeman0.blogspot.com](https://quakeman0.blogspot.com)  
-- 💬 Discord: [https://discord.gg/WyJtDDqJ9c](https://discord.gg/WyJtDDqJ9c)  
+- Carregar arquivos do jogo diretamente
+- Editar textos em caixas separadas
+- Recalcular tamanhos automaticamente
+- Preservar cabeçalhos e bytes importantes
+- Salvar alterações em arquivos binários compatíveis
+- Barra de busca nos textos para facilitar a localização
+- Informações sobre o editor com links para [Discord](https://discord.gg/WyJtDDqJ9c) e [site](https://quakeman0.blogspot.com)
 
 ---
 
-## 📄 Licença
+## 📂 Estrutura do Repositório
 
-Este projeto é **open source** e licenciado sob a [MIT License](https://opensource.org/licenses/MIT).  
+```
+/ID-GAMES-EDITOR
+    ├─ index.html             # Menu principal com links para todos os editores
+    ├─ doom-text-desktop.html
+    ├─ doom-text-mobile.html
+    ├─ class-editor-desktop.html
+    ├─ class-editor-mobile.html
+```
 
 ---
 
-## 💡 Dicas Extras
+## 💻 Requisitos
 
-- Para melhor experiência, use em **navegadores modernos** (Chrome, Edge, Firefox)  
-- É possível usar a URL do GitHub Pages em um **WebView** para criar APKs ou PWA  
-- Contribuições são bem-vindas! Sugira melhorias ou abra **issues** no GitHub
+- Navegador moderno (Chrome, Edge, Firefox)
+- Para versão Mobile, funciona melhor em navegadores com suporte a downloads locais
+- Internet não é necessária.
+
+---
+
+## 📌 Créditos
+
+Desenvolvedor e idealizador: **QUAKEMAN**  
+Comunidade: **J2ME FANS**  
+2024/25  
+
+[💬 Discord](https://discord.gg/WyJtDDqJ9c) | [🌐 Site](https://quakeman0.blogspot.com)
