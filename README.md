@@ -1,6 +1,6 @@
 # 🎮 ID Games Editors
 
-Bem-vindo ao **ID Games Editors**, um conjunto de editores universais para jogos desenvolvidos com a mesma engine do **Doom RPG**, como **Orcs And Elves (Apenas menus)** e **Wolfenstein RPG (Sem suporte)**.  
+Bem-vindo ao **ID Games Editors**, um conjunto de editores universais para **Doom RPG**, e outros jogos da plataforma j2me, o objetivo e desenvolver varios editores para facilitar e economizar tempo em traduções.
 
 Depois de muitas horas de desenvolvimento, estes editores chegaram a uma versão **estável, funcional e acessível** para Desktop e Mobile.
 
@@ -20,6 +20,12 @@ Editor para arquivos `.class` (Java/Bytecode), usado para modificar textos em jo
 - **Desktop:** [Abrir](class-editor-desktop.html)  
 - **Mobile:** [Abrir](class-editor-mobile.html)  
 
+### 3️⃣ Collider 4D Editor
+Editor para textos do jogo **Collider 4D**, da Herocraft, permitindo alterar conteúdos de textos dentro do jogo de forma segura e estável.
+
+- **Desktop:** [Abrir](collider-text-editor-d.html)  
+- **Mobile:** [Abrir](collider-text-editor-m.html)  
+
 ---
 
 ## ⚡ Funcionalidades Comuns
@@ -32,17 +38,7 @@ Editor para arquivos `.class` (Java/Bytecode), usado para modificar textos em jo
 - Barra de busca nos textos para facilitar a localização
 - Informações sobre o editor com links para [Discord](https://discord.gg/WyJtDDqJ9c) e [site](https://quakeman0.blogspot.com)
 
----
 
-## 📂 Estrutura do Repositório
-
-```
-/ID-GAMES-EDITOR
-    ├─ index.html             # Menu principal com links para todos os editores
-    ├─ doom-text-desktop.html
-    ├─ doom-text-mobile.html
-    ├─ class-editor-desktop.html
-    ├─ class-editor-mobile.html
 ```
 
 ---
