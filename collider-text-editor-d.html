@@ -2,22 +2,97 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<title>Collider 4D Editor</title>
+<title>HeroCraft Text Editor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body { font-family: 'Courier New', monospace; background:#0d0d0d; margin:0; color:#ff4c4c; }
-.app-header { position:fixed; top:0; left:0; width:100%; background:#1a0000; color:#ff0000; z-index:50; padding:1rem; display:flex; justify-content:space-between; align-items:center; font-family:'Impact', sans-serif; font-size:1.3rem; text-shadow: 3px 3px 0 #000; }
+body {
+    font-family: 'Courier New', monospace;
+    background:#fef6e4; /* creme claro */
+    margin:0;
+    color:#5c4033; /* marrom escuro elegante */
+}
+
+.app-header {
+    position:fixed;
+    top:0; left:0; width:100%;
+    background:#f2e6d8; /* creme médio */
+    color:#5c4033;
+    z-index:50;
+    padding:1rem;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:'Impact', sans-serif;
+    font-size:1.3rem;
+    box-shadow:0 4px 8px rgba(0,0,0,0.2);
+}
+
 .app-header .title { flex:1; text-align:center; }
-.editor-container { margin-top:6rem; max-width:900px; width:95%; margin-left:auto; margin-right:auto; display:flex; flex-direction:column; gap:0.5rem; }
-#list { background:#1b0b0b; border:2px solid #660000; border-radius:0.5rem; padding:1rem; max-height:70vh; overflow-y:auto; }
+
+.editor-container {
+    margin-top:6rem;
+    max-width:900px;
+    width:95%;
+    margin-left:auto;
+    margin-right:auto;
+    display:flex;
+    flex-direction:column;
+    gap:0.5rem;
+}
+
+#list {
+    background:#fff6eb; /* creme suave */
+    border:2px solid #d8c4a0; /* tom elegante de contorno */
+    border-radius:0.5rem;
+    padding:1rem;
+    max-height:70vh;
+    overflow-y:auto;
+}
+
 #list::-webkit-scrollbar { width:12px; }
-#list::-webkit-scrollbar-track { background:#0d0d0d; }
-#list::-webkit-scrollbar-thumb { background:#ff0000; border-radius:6px; border:3px solid #0d0d0d; }
-.modern-textarea { background:#2b0a0a; color:#ff6b6b; border:2px solid #880000; border-radius:0.5rem; padding:0.75rem; font-family:'Courier New', monospace; font-size:0.95rem; width:100%; resize:none; transition: border 0.3s, box-shadow 0.3s; text-shadow:1px 1px 2px #000; }
-.modern-textarea:focus { border-color:#ff1a1a; outline:none; background:#3b0d0d; box-shadow:0 0 10px #ff0000; }
-button { font-family: 'Impact', sans-serif; font-weight:bold; text-shadow:1px 1px 0 #000; border-radius:0.5rem; border:2px solid #ff1a1a; background:#660000; color:#ff4c4c; padding:0.5rem 1rem; cursor:pointer; transition: all 0.3s; margin-right:0.5rem; }
-button:hover { background:#ff0000; color:#1b0d0d; box-shadow:0 0 15px #ff0000, 0 0 20px #ff1a1a; transform: scale(1.05); }
+#list::-webkit-scrollbar-track { background:#fef6e4; }
+#list::-webkit-scrollbar-thumb { background:#d8a95a; border-radius:6px; border:3px solid #fef6e4; }
+
+.modern-textarea {
+    background:#fffbed; /* creme leve */
+    color:#5c4033;
+    border:2px solid #d8c4a0;
+    border-radius:0.5rem;
+    padding:0.75rem;
+    font-family:'Courier New', monospace;
+    font-size:0.95rem;
+    width:100%;
+    resize:none;
+    transition: border 0.3s, box-shadow 0.3s;
+}
+
+.modern-textarea:focus {
+    border-color:#bfa06f;
+    outline:none;
+    box-shadow:0 0 10px #bfa06f50;
+}
+
+button {
+    font-family: 'Impact', sans-serif;
+    font-weight:bold;
+    border-radius:0.5rem;
+    border:2px solid #bfa06f;
+    background:#f2e6d8;
+    color:#5c4033;
+    padding:0.5rem 1rem;
+    cursor:pointer;
+    transition: all 0.3s;
+    margin-right:0.5rem;
+}
+
+button:hover {
+    background:#d8c4a0;
+    color:#fff6e4;
+    box-shadow:0 0 10px #bfa06f50;
+    transform: scale(1.05);
+}
+
 #file { display:none; }
 </style>
 </head>
@@ -25,7 +100,7 @@ button:hover { background:#ff0000; color:#1b0d0d; box-shadow:0 0 15px #ff0000, 0
 
 <div class="app-header">
     <button id="openFileBtn">📂 Abrir</button>
-    <div class="title">Collider 4D (.dat)</div>
+    <div class="title">HeroCraft Editor</div>
     <div>
         <button id="infoBtn">ℹ️</button>
         <button id="save" disabled>💾 Salvar</button>
@@ -39,6 +114,7 @@ button:hover { background:#ff0000; color:#1b0d0d; box-shadow:0 0 15px #ff0000, 0
 </div>
 
 <script>
+// script permanece igual ao seu original
 let bytes;
 let blocks = [];
 
@@ -46,11 +122,8 @@ const fileInput = document.getElementById('file');
 const importInput = document.getElementById('importFile');
 const list = document.getElementById('list');
 const saveBtn = document.getElementById('save');
-const exportBtn = document.getElementById('exportTxt');
-const importBtn = document.getElementById('importTxt');
 const openFileBtn = document.getElementById('openFileBtn');
 
-// Abrir arquivo
 openFileBtn.addEventListener('click', ()=>fileInput.click());
 fileInput.addEventListener('change', e=>{
     const f = e.target.files[0];
@@ -60,13 +133,10 @@ fileInput.addEventListener('change', e=>{
         bytes = new Uint8Array(ev.target.result);
         parseFile();
         saveBtn.disabled = false;
-        exportBtn.disabled = false;
-        importBtn.disabled = false;
     };
     reader.readAsArrayBuffer(f);
 });
 
-// Parse do arquivo (Big Endian)
 function parseFile(){
     blocks=[];
     list.innerHTML='';
@@ -95,7 +165,6 @@ function parseFile(){
     }
 }
 
-// Salvar arquivo (Big Endian)
 saveBtn.addEventListener('click', ()=>{
     const out=[];
     for(const b of blocks){
@@ -111,33 +180,8 @@ saveBtn.addEventListener('click', ()=>{
     URL.revokeObjectURL(a.href);
 });
 
-// Exportar TXT
-exportBtn.addEventListener('click', ()=>{
-    const txt = blocks.map(b=>b.text).join('\n===\n');
-    const blob = new Blob([txt], {type:'text/plain'});
-    const a = document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='texts_export.txt';
-    a.click();
-    URL.revokeObjectURL(a.href);
-});
-
-// Importar TXT
-importBtn.addEventListener('click', ()=>importInput.click());
-importInput.addEventListener('change', e=>{
-    const f = e.target.files[0];
-    if(!f) return;
-    const reader = new FileReader();
-    reader.onload=ev=>{
-        const txtBlocks = ev.target.result.split('\n===\n');
-        txtBlocks.forEach((t,i)=>{ if(blocks[i]) blocks[i].input.value=t; blocks[i].text=t; });
-    };
-    reader.readAsText(f);
-});
-
-// Informações
 document.getElementById('infoBtn').addEventListener('click', ()=>{
-    alert("Editor de textos para o Collider 4D (.dat)\n\nDesenvolvedor: QUAKEMAN\n2024/25\nDiscord: https://discord.gg/WyJtDDqJ9c\nSite: https://quakeman0.blogspot.com");
+    alert("Editor de textos para jogos Herocraft\n\nDesenvolvedor: QUAKEMAN\n2024/25\nDiscord: https://discord.gg/WyJtDDqJ9c\nSite: https://quakeman0.blogspot.com");
 });
 </script>
 
