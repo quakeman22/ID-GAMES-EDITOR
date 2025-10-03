@@ -20,8 +20,8 @@ Editor para arquivos `.class` (Java/Bytecode), usado para modificar textos em jo
 - **Desktop:** [Abrir](class-editor-desktop.html)  
 - **Mobile:** [Abrir](class-editor-mobile.html)  
 
-### 3️⃣ HeroCraft Editor
-Editor para textos de jogos da **HeroCraft**, como Collider4D e BattleBoats, permitindo alterar conteúdos de textos dentro do jogo de forma segura e estável. (Necessário testar compatibilidade com outros jogos que tenha o mesmo padrão de arquivos.)
+### 3️⃣ HeroCraft/Fishlabs Editor
+Editor para textos de jogos da **HeroCraft** e **FishLabss**, inicialmente criado para o Collider4D, mas e compatível com todos os jogos da FishLabs, permitindo alterar conteúdos de textos dentro do jogo de forma segura e estável. (Necessário testar compatibilidade com outros jogos de outras empresas que tenha o mesmo padrão de arquivos.)
 
 - **Desktop:** [Abrir](collider-text-editor-d.html)  
 - **Mobile:** [Abrir](collider-text-editor-m.html)  
