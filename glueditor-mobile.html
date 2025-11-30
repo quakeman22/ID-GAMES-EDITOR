@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Glu Translator - ActionBar</title>
+    <style>
+        /* --- Reset e Estilos de Base --- */
+        body { 
+            font-family: 'Roboto', sans-serif;
+            margin: 0; 
+            padding-top: 60px; /* Espaço para a ActionBar fixa */
+            background-color: #f0f0f0; 
+            color: #333; 
+        }
+
+        /* --- ActionBar Fixa (Nova Barra de Controle) --- */
+        .action-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 56px;
+            background-color: #ffffff; /* Fundo branco ou claro para a barra */
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+        }
+
+        .action-bar h1 {
+            margin: 0;
+            font-size: 1.25em;
+            font-weight: 500;
+            color: #007bff;
+        }
+
+        .controls-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        /* Estilo dos Botões na ActionBar */
+        .controls-group button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #f4f4f4;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #e0e0e0;
+        }
+        .controls-group button:disabled {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        /* --- Conteúdo Principal Centralizado --- */
+        .container { 
+            max-width: 800px; /* Largura máxima centralizada (Desktop) */
+            margin: 16px auto; /* Centraliza horizontalmente e adiciona margem superior */
+            padding: 0 16px;
+        }
+        
+        .list-panel { 
+            background: white; 
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            min-height: 70vh;
+        }
+        
+        #text-list { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+        }
+        #text-list li { 
+            padding: 12px 16px; 
+            cursor: pointer; 
+            border-bottom: 1px solid #eee; 
+            font-size: 0.95em; 
+            transition: background-color 0.1s; 
+            word-break: break-all;
+        }
+        #text-list li:hover { 
+            background-color: #f5f5f5; 
+        }
+        .selected { 
+            background-color: #e3f2fd !important;
+            font-weight: bold; 
+            color: #1976d2;
+        }
+        
+        /* --- Modal de Edição (Mantido) --- */
+        #edit-modal {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: white; 
+            z-index: 1000;
+        }
+
+        #modal-content {
+            padding: 16px;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            font-family: monospace; 
+            font-size: 1em; 
+            resize: vertical; 
+        }
+        
+        #modal-editor { flex-grow: 1; min-height: 150px; margin-bottom: 10px; }
+        #modal-original { min-height: 80px; background-color: #eee; color: #666; margin-bottom: 16px; }
+
+        .modal-buttons button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .modal-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* --- Media Query para Mobile (Mantém Modal como única UI de edição) --- */
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%; /* Ocupa toda a largura do mobile */
+                padding: 0 8px;
+            }
+            .action-bar h1 {
+                display: none; /* Esconde o título para dar espaço aos botões no mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="action-bar">
+        <h1>Glu File Editor</h1>
+        
+        <div class="controls-group">
+            <input type="file" id="file-input" accept=".*" required style="display: none;">
+            
+            <label for="file-input" class="btn-secondary">
+                Open file
+            </label>
+            
+            <button onclick="saveFile()" id="save-btn" class="btn-primary" disabled>
+                Save
+            </button>
+            
+            <button onclick="showOptions()" id="options-btn" class="btn-secondary">
+                ⚙️
+            </button>
+        </div>
+    </div>
+
+    <div id="edit-modal" style="display: none;">
+        <div id="modal-content">
+            <h3 id="modal-title">Edição de Texto</h3>
+            <label for="modal-editor">Tradução:</label>
+            <textarea id="modal-editor"></textarea>
+            
+            <label for="modal-original">Original (somente leitura):</label>
+            <textarea id="modal-original" disabled></textarea>
+
+            <div class="modal-buttons">
+                <button onclick="saveModalAndClose()" style="background-color: #28a745;">Salvar e Fechar</button>
+                <button onclick="closeModal()" style="background-color: #dc3545;">Descartar</button>
+            </div>
+        </div>
+    </div>
+    <div id="options-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1500;">
+        <div style="background-color: white; margin: 20% auto; padding: 20px; border-radius: 8px; max-width: 90%; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+            <h3>Opções da Ferramenta</h3>
+            
+            <button id="opc1-btn" style="width: 100%; padding: 12px; margin-bottom: 10px; background-color: #FFC107; color: #333;">Opção Adicional 1 (Ex: Exportar JSON)</button>
+            
+            <button id="opc2-btn" style="width: 100%; padding: 12px; margin-bottom: 20px; background-color: #03A9F4;">Opção Adicional 2 (Ex: Limpar Dados)</button>
+
+            <button onclick="closeOptionsModal()" style="width: 100%; background-color: #607D8B;">Fechar</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="panel list-panel">
+            <h2>Text List</h2>
+            <ul id="text-list">
+                <li style="text-align: center; color: #888;">Carregue um arquivo para começar.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis de Estado Global
+        let fileData = null; 
+        let texts = []; 
+        let currentTextIndex = -1; 
+        let fileType = 0; 
+        let S_c_data = []; 
+
+        // --- DOM Elements ---
+        const fileInput = document.getElementById('file-input');
+        const saveBtn = document.getElementById('save-btn');
+        const textList = document.getElementById('text-list');
+        const editModal = document.getElementById('edit-modal');
+        const modalEditor = document.getElementById('modal-editor');
+        const modalOriginal = document.getElementById('modal-original');
+        const modalTitle = document.getElementById('modal-title');
+        const optionsModal = document.getElementById('options-modal'); 
+
+        // --- Funções Auxiliares de Bytes e Conversão ---
+        function readU32Be(view, offset) { return view.getUint32(offset, false); }
+        function readU16Be(view, offset) { return view.getUint16(offset, false); }
+        function writeU32Be(view, offset, value) { view.setUint32(offset, value, false); }
+        function writeU16Be(view, offset, value) { view.setUint16(offset, value, false); }
+        function changemytext(s) { return s.replace(/\n/g, "\\n").replace(/\v/g, "\\v"); }
+        function reverttext(s) { return s.replace(/\\n/g, String.fromCharCode(10)).replace(/\\v/g, String.fromCharCode(11)); }
+        
+        // --- Event Listener do Input File (Dispara o carregamento) ---
+        fileInput.addEventListener('change', loadFile);
+
+        // --- Funções de UI e Lógica ---
+        
+        function loadFile() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // Desabilita o botão Salvar e espera
+            saveBtn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    fileData = e.target.result;
+                    parseFile(fileData);
+                    saveBtn.disabled = false;
+                } catch (error) {
+                    alert("Erro ao processar o arquivo: " + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseFile(buffer) {
+            texts = []; S_c_data = [];
+            const view = new DataView(buffer);
+            let offset = 0;
+            const textDecoder = new TextDecoder('utf-8');
+
+            const count = readU32Be(view, offset); offset += 4;
+            const S_d = [];
+            
+            for (let i = 0; i <= count; i++) {
+                S_c_data.push(readU16Be(view, offset)); offset += 2;
+                S_d.push(readU16Be(view, offset)); offset += 2;
+            }
+
+            const headerSize = 4 + 4 * (count + 1);
+            fileType = (S_d[1] !== headerSize) ? 1 : 0;
+            let firstTextBlockIndex = fileType; 
+
+            for (let i = firstTextBlockIndex; i < count; i++) {
+                const startOffset = S_d[i];
+                const endOffset = S_d[i+1];
+                const rawBytes = buffer.slice(startOffset, endOffset);
+                const rawText = textDecoder.decode(rawBytes);
+                
+                texts.push({
+                    original: rawText,
+                    display: changemytext(rawText),
+                    rawIndex: i 
+                });
+            }
+            populateList();
+        }
+
+        function populateList() {
+            textList.innerHTML = '';
+            
+            if (fileType === 1) {
+                const li = document.createElement('li');
+                li.textContent = `1 - <<BLOCO DE IMAGEM>>`;
+                li.dataset.index = -1;
+                textList.appendChild(li);
+            }
+
+            texts.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${(fileType === 1 ? index + 2 : index + 1)} - ${item.display.substring(0, 50) + (item.display.length > 50 ? '...' : '')}`;
+                li.dataset.index = index;
+                li.onclick = () => selectText(index);
+                textList.appendChild(li);
+            });
+            selectText(-1);
+        }
+        
+        function selectText(index) {
+            currentTextIndex = index;
+            
+            document.querySelectorAll('#text-list li').forEach(li => li.classList.remove('selected'));
+            
+            if (index !== -1) {
+                document.querySelector(`li[data-index="${index}"]`).classList.add('selected');
+                const item = texts[index];
+
+                openModal(index, item);
+            }
+        }
+        
+        // --- Funções do Modal de Edição ---
+
+        function openModal(index, item) {
+            modalTitle.textContent = `Editando Texto ${fileType === 1 ? index + 2 : index + 1}`;
+            modalEditor.value = item.display;
+            modalOriginal.value = item.original;
+            editModal.style.display = 'block';
+        }
+
+        function closeModal() {
+            editModal.style.display = 'none';
+        }
+
+        function saveModalAndClose() {
+            if (currentTextIndex !== -1) {
+                const newText = modalEditor.value;
+                texts[currentTextIndex].display = newText;
+                
+                const li = document.querySelector(`li[data-index="${currentTextIndex}"]`);
+                if (li) {
+                     const indexText = li.textContent.split(' - ')[0];
+                     li.textContent = `${indexText} - ${newText.substring(0, 50) + (newText.length > 50 ? '...' : '')}`;
+                }
+            }
+            closeModal();
+        }
+
+        // --- Funções do Modal de Opções ---
+        
+        function showOptions() {
+            optionsModal.style.display = 'block';
+            
+            document.getElementById('opc1-btn').onclick = () => {
+                alert('Funcionalidade 1 acionada! (Ex: Exportar JSON)');
+                closeOptionsModal();
+            };
+            document.getElementById('opc2-btn').onclick = () => {
+                alert('Funcionalidade 2 acionada! (Ex: Limpar todos os dados)');
+                closeOptionsModal();
+            };
+        }
+
+        function closeOptionsModal() {
+            optionsModal.style.display = 'none';
+        }
+
+        // --- Funções de Salvamento e Reconstrução ---
+
+        function saveFile() {
+            if (!fileData) {
+                alert("Nenhum arquivo carregado para salvar.");
+                return;
+            }
+
+            saveBtn.disabled = true;
+
+            try {
+                const newFile = reconstructFile(fileData);
+                downloadFile(newFile, fileInput.files[0].name + "edited");
+                alert("Arquivo salvo com sucesso!");
+            } catch (error) {
+                alert("Erro ao reconstruir o arquivo: " + error.message);
+                console.error(error);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        }
+        
+        function reconstructFile(originalBuffer) {
+            const textEncoder = new TextEncoder();
+                
+            const newTextBlocks = texts.map(item => textEncoder.encode(reverttext(item.display)));
+            
+            let imageBlockBytes = new Uint8Array(0);
+            let imageBlockLength = 0;
+
+            if (fileType === 1) {
+                const originalView = new DataView(originalBuffer);
+                const count = readU32Be(originalView, 0);
+                
+                let offset = 4;
+                const original_S_d = [];
+                for (let i = 0; i <= count; i++) {
+                    offset += 2; 
+                    original_S_d.push(readU16Be(originalView, offset));
+                    offset += 2;
+                }
+
+                const imgStart = original_S_d[0];
+                const imgEnd = original_S_d[1];
+                imageBlockBytes = new Uint8Array(originalBuffer.slice(imgStart, imgEnd));
+                imageBlockLength = imageBlockBytes.byteLength;
+            }
+
+            const count = S_c_data.length - 1;
+            const newHeaderSize = 4 + 4 * (count + 1);
+            const new_S_d = [0]; 
+            let currentOffset = newHeaderSize;
+
+            new_S_d[0] = currentOffset;
+
+            let blockIndex = 1;
+
+            if (fileType === 1) {
+                currentOffset += imageBlockLength;
+                new_S_d[blockIndex++] = currentOffset; 
+            }
+
+            for (let i = 0; i < newTextBlocks.length; i++) {
+                currentOffset += newTextBlocks[i].byteLength;
+                new_S_d[blockIndex++] = currentOffset;
+            }
+            
+            const totalSize = currentOffset;
+            const newBuffer = new ArrayBuffer(totalSize);
+            const newView = new DataView(newBuffer);
+            let writeOffset = 0;
+
+            writeU32Be(newView, writeOffset, count);
+            writeOffset += 4;
+
+            for (let i = 0; i <= count; i++) {
+                writeU16Be(newView, writeOffset, S_c_data[i]);
+                writeOffset += 2;
+                writeU16Be(newView, writeOffset, new_S_d[i]);
+                writeOffset += 2;
+            }
+
+            if (fileType === 1) {
+                new Uint8Array(newBuffer).set(imageBlockBytes, writeOffset);
+                writeOffset += imageBlockLength;
+            }
+            
+            for (const block of newTextBlocks) {
+                new Uint8Array(newBuffer).set(block, writeOffset);
+                writeOffset += block.byteLength;
+            }
+
+            return newBuffer;
+        }
+
+        function downloadFile(buffer, filename) {
+            const blob = new Blob([buffer], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
