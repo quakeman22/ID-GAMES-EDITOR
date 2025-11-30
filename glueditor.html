@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Glu Text Tool - Versão Local Simples</title>
+    <style>
+        /* --- Estilos Gerais --- */
+        body { 
+            font-family: sans-serif; 
+            margin: 20px; 
+            background-color: #f4f4f9; 
+            color: #333; 
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            display: flex; 
+            gap: 20px; 
+        }
+        
+        .panel { 
+            padding: 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+            background: white; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+        }
+        
+        .list-panel { 
+            flex: 1; 
+            min-width: 250px; 
+            max-height: 70vh; 
+            overflow-y: auto; 
+        }
+        
+        .editor-panel { 
+            flex: 3; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+        }
+        
+        textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            font-family: monospace; 
+            font-size: 1em; 
+            resize: vertical; 
+        }
+        
+        #editor { min-height: 150px; }
+        #original { min-height: 100px; background-color: #eee; color: #666; }
+        #text-list { list-style: none; padding: 0; margin: 0; }
+        #text-list li { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #eee; transition: background-color 0.1s; font-size: 0.9em; word-break: break-all;}
+        #text-list li:hover { background-color: #f0f0f0; }
+        .selected { background-color: #007bff !important; color: white; font-weight: bold; }
+        
+        button { 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            background-color: #007bff; 
+            color: white; 
+            font-weight: bold; 
+        }
+        
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .controls { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+
+        /* --- Estilos do Modal --- */
+        #edit-modal {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0, 0, 0, 0.7); 
+            z-index: 1000;
+        }
+
+        #edit-modal > div {
+            background-color: white; 
+            margin: 10% auto; 
+            padding: 20px; 
+            border-radius: 8px; 
+            max-width: 600px; /* Largura padrão do modal */
+            max-height: 80%; 
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- Media Query para Mobile (Layout Responsivo) --- */
+
+        @media (max-width: 768px) {
+            .container {
+                /* Empilha os painéis */
+                flex-direction: column; 
+            }
+            
+            .list-panel {
+                /* Ocupa 100% da largura em mobile */
+                width: 100%; 
+                max-height: 50vh; /* Para que a lista não ocupe toda a tela */
+            }
+            
+            .editor-panel {
+                /* Oculta o painel de edição em mobile (a edição ocorre no Modal) */
+                display: none; 
+            }
+
+            /* O modal deve ser maximizado em telas pequenas */
+            #edit-modal > div {
+                margin: 5% auto;
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="edit-modal" style="display: none;">
+        <div id="modal-content">
+            <h3 id="modal-title">Edição de Texto</h3>
+            <label for="modal-editor">Tradução:</label>
+            <textarea id="modal-editor" style="width: 100%; min-height: 200px; margin-bottom: 10px;"></textarea>
+            
+            <label for="modal-original">Original (somente leitura):</label>
+            <textarea id="modal-original" disabled style="width: 100%; min-height: 100px; margin-bottom: 20px; background-color: #eee;"></textarea>
+
+            <button onclick="saveModalAndClose()" style="background-color: #28a745;">Salvar e Fechar</button>
+            <button onclick="closeModal()" style="background-color: #dc3545;">Descartar</button>
+        </div>
+    </div>
+    <h1>Glu Text Tool - Local</h1>
+
+    <div class="controls">
+        <input type="file" id="file-input" accept=".*" required>
+        <button onclick="loadFile()" id="load-btn">Carregar Arquivo</button>
+        <button onclick="saveFile()" id="save-btn" disabled>Salvar (*.new)</button>
+        <span id="status-msg">Pronto.</span>
+    </div>
+
+    <div class="container">
+        <div class="panel list-panel">
+            <h2>Lista de Textos</h2>
+            <ul id="text-list">
+                <li style="text-align: center; color: #888;">Carregue um arquivo para começar.</li>
+            </ul>
+        </div>
+
+        <div class="panel editor-panel">
+            <h2>Edição</h2>
+            <label for="editor">Tradução (Edite aqui):</label>
+            <textarea id="editor" disabled oninput="updateTextFromEditor()"></textarea> 
+            
+            <label for="original">Original (Somente Leitura):</label>
+            <textarea id="original" disabled></textarea>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis de Estado Global
+        let fileData = null; // Buffer com o conteúdo binário completo do arquivo original
+        let texts = []; // Array de objetos { original: "...", display: "...", rawIndex: N }
+        let currentTextIndex = -1; // Índice atual no array 'texts'
+        let fileType = 0; // 0 ou 1 (para simplificar a lógica de reconstrução)
+        let S_c_data = []; // Valores S_c originais (para reconstrução)
+        
+        // --- DOM Elements ---
+        const fileInput = document.getElementById('file-input');
+        const loadBtn = document.getElementById('load-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const textList = document.getElementById('text-list');
+        const editor = document.getElementById('editor'); // Desktop
+        const original = document.getElementById('original'); // Desktop
+        const statusMsg = document.getElementById('status-msg');
+
+        // --- Variáveis do Modal ---
+        const editModal = document.getElementById('edit-modal');
+        const modalEditor = document.getElementById('modal-editor');
+        const modalOriginal = document.getElementById('modal-original');
+        const modalTitle = document.getElementById('modal-title');
+        
+        // --- Utils ---
+
+        /** Verifica se estamos em um dispositivo móvel (ou tela pequena) */
+        const isMobile = () => window.matchMedia("(max-width: 768px)").matches;
+
+        /** Lê um inteiro de 4 bytes (Big Endian) a partir de um DataView */
+        function readU32Be(view, offset) {
+            return view.getUint32(offset, false);
+        }
+
+        /** Lê um inteiro de 2 bytes (Big Endian) a partir de um DataView */
+        function readU16Be(view, offset) {
+            return view.getUint16(offset, false);
+        }
+
+        /** Escreve um inteiro de 4 bytes (Big Endian) em um DataView */
+        function writeU32Be(view, offset, value) {
+            view.setUint32(offset, value, false);
+        }
+
+        /** Escreve um inteiro de 2 bytes (Big Endian) em um DataView */
+        function writeU16Be(view, offset, value) {
+            view.setUint16(offset, value, false);
+        }
+
+        /** Converte 0x0A -> \n e 0x0B -> \v para exibição na UI */
+        function changemytext(s) {
+            return s.replace(/\n/g, "\\n").replace(/\v/g, "\\v");
+        }
+
+        /** Inverte a conversão: \n -> 0x0A e \v -> 0x0B para salvar no arquivo */
+        function reverttext(s) {
+            return s.replace(/\\n/g, String.fromCharCode(10)).replace(/\\v/g, String.fromCharCode(11));
+        }
+
+        // --- Funções de Carregamento e Parsing ---
+        
+        function loadFile() {
+            const file = fileInput.files[0];
+            if (!file) {
+                statusMsg.textContent = "Selecione um arquivo.";
+                return;
+            }
+            loadBtn.disabled = true;
+            statusMsg.textContent = "Carregando...";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    fileData = e.target.result; // ArrayBuffer
+                    parseFile(fileData);
+                    saveBtn.disabled = false;
+                    statusMsg.textContent = `Arquivo carregado. Tipo: ${fileType}.`;
+                } catch (error) {
+                    statusMsg.textContent = "Erro ao processar o arquivo: " + error.message;
+                    console.error(error);
+                } finally {
+                    loadBtn.disabled = false;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseFile(buffer) {
+            texts = [];
+            S_c_data = [];
+            const view = new DataView(buffer);
+            let offset = 0;
+            const textDecoder = new TextDecoder('utf-8');
+
+            const count = readU32Be(view, offset);
+            offset += 4;
+            
+            const S_d = [];
+            
+            for (let i = 0; i <= count; i++) {
+                const sc = readU16Be(view, offset);
+                offset += 2;
+                const sd = readU16Be(view, offset);
+                offset += 2;
+                S_c_data.push(sc);
+                S_d.push(sd);
+            }
+
+            const headerSize = 4 + 4 * (count + 1);
+            fileType = (S_d[1] !== headerSize) ? 1 : 0;
+            
+            let numBlocks = count;
+            let firstTextBlockIndex = fileType; 
+
+            for (let i = firstTextBlockIndex; i < numBlocks; i++) {
+                const startOffset = S_d[i];
+                const endOffset = S_d[i+1];
+                const length = endOffset - startOffset;
+
+                const rawBytes = buffer.slice(startOffset, endOffset);
+                const rawText = textDecoder.decode(rawBytes);
+                
+                texts.push({
+                    original: rawText,
+                    display: changemytext(rawText),
+                    rawIndex: i 
+                });
+            }
+
+            populateList();
+        }
+
+        function populateList() {
+            textList.innerHTML = '';
+            
+            if (fileType === 1) {
+                const li = document.createElement('li');
+                li.textContent = `1 - <<BLOCO DE IMAGEM>>`;
+                li.dataset.index = -1;
+                textList.appendChild(li);
+            }
+
+            texts.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${(fileType === 1 ? index + 2 : index + 1)} - ${item.display.substring(0, 50) + (item.display.length > 50 ? '...' : '')}`;
+                li.dataset.index = index;
+                li.onclick = () => selectText(index);
+                textList.appendChild(li);
+            });
+            selectText(-1);
+        }
+        
+        function selectText(index) {
+            // Salva o texto editado do item anterior (se for desktop)
+            if (currentTextIndex !== -1 && currentTextIndex < texts.length && !isMobile()) {
+                updateTextFromEditor(true); 
+            }
+
+            currentTextIndex = index;
+            
+            // Limpa/Desativa os campos de desktop
+            editor.value = '';
+            original.value = '';
+            editor.disabled = true;
+
+            // Desmarca todos
+            document.querySelectorAll('#text-list li').forEach(li => li.classList.remove('selected'));
+            
+            if (index !== -1) {
+                document.querySelector(`li[data-index="${index}"]`).classList.add('selected');
+                const item = texts[index];
+
+                if (isMobile()) {
+                    // MÓVEL: Abre o modal
+                    openModal(index, item);
+                } else {
+                    // DESKTOP: Preenche os campos laterais
+                    editor.value = item.display;
+                    original.value = item.original;
+                    editor.disabled = false;
+                }
+            } else {
+                original.value = "Selecione um bloco de texto da lista.";
+            }
+        }
+        
+        // Função chamada pelo campo de edição (apenas em DESKTOP)
+        function updateTextFromEditor(forceSave = false) {
+            if (currentTextIndex === -1 || editor.disabled || isMobile()) return;
+            
+            const newText = editor.value;
+            if (forceSave || newText !== texts[currentTextIndex].display) {
+                texts[currentTextIndex].display = newText;
+                
+                // Atualiza a prévia na lista
+                const li = document.querySelector(`li[data-index="${currentTextIndex}"]`);
+                if (li) {
+                     const indexText = li.textContent.split(' - ')[0];
+                     li.textContent = `${indexText} - ${newText.substring(0, 50) + (newText.length > 50 ? '...' : '')}`;
+                }
+            }
+        }
+
+        // --- Funções do Modal (para Mobile) ---
+
+        function openModal(index, item) {
+            modalTitle.textContent = `Editando Texto ${fileType === 1 ? index + 2 : index + 1}`;
+            modalEditor.value = item.display;
+            modalOriginal.value = item.original;
+            editModal.style.display = 'block';
+        }
+
+        function closeModal() {
+            editModal.style.display = 'none';
+        }
+
+        function saveModalAndClose() {
+            if (currentTextIndex !== -1) {
+                // Salva o valor do modal de volta no array de dados
+                const newText = modalEditor.value;
+                texts[currentTextIndex].display = newText;
+                
+                // Atualiza a prévia na lista
+                const li = document.querySelector(`li[data-index="${currentTextIndex}"]`);
+                if (li) {
+                     const indexText = li.textContent.split(' - ')[0];
+                     li.textContent = `${indexText} - ${newText.substring(0, 50) + (newText.length > 50 ? '...' : '')}`;
+                }
+                
+                // Se o usuário estiver em desktop (e o modal estiver aberto por algum motivo), sincroniza o campo lateral
+                if (!isMobile()) {
+                    editor.value = newText;
+                }
+            }
+            closeModal();
+        }
+
+        // --- Funções de Salvamento e Reconstrução ---
+
+        function saveFile() {
+            if (!fileData) {
+                alert("Nenhum arquivo carregado para salvar.");
+                return;
+            }
+            // Garante que o último texto editado seja salvo
+            updateTextFromEditor(true); 
+
+            statusMsg.textContent = "Reconstruindo o arquivo...";
+            saveBtn.disabled = true;
+
+            try {
+                const newFile = reconstructFile(fileData);
+                downloadFile(newFile, fileInput.files[0].name + ".new");
+                statusMsg.textContent = "Arquivo salvo com sucesso!";
+            } catch (error) {
+                statusMsg.textContent = "Erro ao reconstruir o arquivo: " + error.message;
+                console.error(error);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        }
+
+        function reconstructFile(originalBuffer) {
+            const textEncoder = new TextEncoder();
+            
+            // 1. PREPARA OS NOVOS BLOCOS DE BYTES
+            const newTextBlocks = texts.map(item => textEncoder.encode(reverttext(item.display)));
+            
+            let imageBlockBytes = new Uint8Array(0);
+            let imageBlockLength = 0;
+
+            if (fileType === 1) {
+                // Lógica para extrair a imagem do buffer original
+                const originalView = new DataView(originalBuffer);
+                const count = readU32Be(originalView, 0);
+                
+                let offset = 4;
+                const original_S_d = [];
+                for (let i = 0; i <= count; i++) {
+                    offset += 2; // pula S_c
+                    original_S_d.push(readU16Be(originalView, offset));
+                    offset += 2;
+                }
+
+                // O bloco de imagem é entre S_d[0] e S_d[1] no arquivo original
+                const imgStart = original_S_d[0];
+                const imgEnd = original_S_d[1];
+                imageBlockBytes = new Uint8Array(originalBuffer.slice(imgStart, imgEnd));
+                imageBlockLength = imageBlockBytes.byteLength;
+            }
+
+            // 2. CALCULA OS NOVOS OFFSETS (S_d)
+            const count = S_c_data.length - 1;
+            const newHeaderSize = 4 + 4 * (count + 1);
+            const new_S_d = [0]; 
+            let currentOffset = newHeaderSize;
+
+            new_S_d[0] = currentOffset;
+
+            let blockIndex = 1;
+
+            if (fileType === 1) {
+                currentOffset += imageBlockLength;
+                new_S_d[blockIndex++] = currentOffset; 
+            }
+
+            for (let i = 0; i < newTextBlocks.length; i++) {
+                currentOffset += newTextBlocks[i].byteLength;
+                new_S_d[blockIndex++] = currentOffset;
+            }
+            
+            // 3. MONTA O NOVO BUFFER
+            const totalSize = currentOffset;
+            const newBuffer = new ArrayBuffer(totalSize);
+            const newView = new DataView(newBuffer);
+            let writeOffset = 0;
+
+            // A. ESCREVE COUNT (u32)
+            writeU32Be(newView, writeOffset, count);
+            writeOffset += 4;
+
+            // B. ESCREVE NOVOS S_c e S_d ARRAYS
+            for (let i = 0; i <= count; i++) {
+                writeU16Be(newView, writeOffset, S_c_data[i]);
+                writeOffset += 2;
+                writeU16Be(newView, writeOffset, new_S_d[i]);
+                writeOffset += 2;
+            }
+
+            // C. ESCREVE OS BLOCOS DE DADOS
+            
+            // Bloco de Imagem (se houver)
+            if (fileType === 1) {
+                new Uint8Array(newBuffer).set(imageBlockBytes, writeOffset);
+                writeOffset += imageBlockLength;
+            }
+            
+            // Blocos de Texto
+            for (const block of newTextBlocks) {
+                new Uint8Array(newBuffer).set(block, writeOffset);
+                writeOffset += block.byteLength;
+            }
+
+            return newBuffer;
+        }
+
+        function downloadFile(buffer, filename) {
+            const blob = new Blob([buffer], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
