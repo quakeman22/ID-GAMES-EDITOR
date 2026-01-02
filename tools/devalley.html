@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devalley Web Editor v5.0</title>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --primary: #4CAF50;
+            --border: #e0e0e0;
+            --text: #333;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Toolbar */
+        .toolbar { height: 60px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 10px; }
+        button { padding: 8px 16px; border-radius: 6px; border: 1px solid #d0d0d0; background: white; cursor: pointer; font-weight: 500; }
+        button:hover { background: #f0f0f0; }
+        button.primary { background: var(--primary); color: white; border: none; }
+        #fileInfo { margin-left: auto; color: #666; font-size: 14px; }
+
+        /* Tabs */
+        .tabs { display: flex; background: #eee; }
+        .tab { padding: 12px 24px; cursor: pointer; border: none; background: none; font-size: 14px; }
+        .tab.active { background: white; border-bottom: 3px solid var(--primary); font-weight: bold; }
+
+        /* Main Layout */
+        .content-area { display: none; flex: 1; overflow: hidden; }
+        .content-area.active { display: flex; }
+        
+        .sidebar { width: 300px; border-right: 1px solid var(--border); background: white; overflow-y: auto; }
+        .main-view { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: white; }
+
+        .list-item { padding: 10px 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .list-item:hover { background: #f8f9fa; }
+        .list-item.selected { background: #e3f2fd; color: #1976d2; }
+        .modified { color: #d32f2f; font-weight: bold; }
+
+        textarea { width: 100%; height: 100%; font-family: 'Consolas', monospace; font-size: 14px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; resize: none; }
+        #imagePreviewContainer { flex: 1; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; background: #fff; position: relative; }
+        #imagePreview { max-width: 100%; max-height: 100%; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <button class="primary" onclick="document.getElementById('fileInput').click()">Abrir Arquivo</button>
+    <button id="saveBtn" onclick="saveFile()" disabled>Salvar Como...</button>
+    <input type="file" id="fileInput" class="hidden" onchange="handleFileSelect(this)">
+    <div id="fileInfo">Nenhum arquivo carregado</div>
+</div>
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('text')">Editor de Texto</div>
+    <div class="tab" onclick="switchTab('image')">Editor de Imagem</div>
+</div>
+
+<div id="textTab" class="content-area active">
+    <div class="sidebar" id="textList"></div>
+    <div class="main-view">
+        <label>Conteúdo do Bloco:</label>
+        <textarea id="textEditor" oninput="updateCurrentTextBlock()"></textarea>
+    </div>
+</div>
+
+<div id="imageTab" class="content-area">
+    <div class="sidebar" id="imageList"></div>
+    <div class="main-view">
+        <div id="imgMeta" style="color: #666; font-size: 13px;">Selecione um recurso</div>
+        <div id="imagePreviewContainer">
+            <img id="imagePreview" alt="">
+        </div>
+        <button onclick="document.getElementById('pngInput').click()">Substituir PNG</button>
+        <input type="file" id="pngInput" class="hidden" accept="image/png" onchange="replaceImage(this)">
+    </div>
+</div>
+
+<script>
+    let currentFileData = null;
+    let textBlocks = [];
+    let imageBlocks = [];
+    let currentMode = 'text'; // 'text' ou 'image'
+    let selectedIndex = -1;
+    let fileName = "";
+
+    const FILE_ENCODING = "iso-8859-1"; // Correspondente ao seu Python
+
+    // --- Lógica de Abas ---
+    function switchTab(tab) {
+        currentMode = tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.content-area').forEach(c => c.classList.remove('active'));
+        
+        if(tab === 'text') {
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            document.getElementById('textTab').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab')[1].classList.add('active');
+            document.getElementById('imageTab').classList.add('active');
+        }
+        selectedIndex = -1;
+        renderLists();
+    }
+
+    // --- Parser Binário ---
+    async function handleFileSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+        fileName = file.name;
+        const buffer = await file.arrayBuffer();
+        currentFileData = new Uint8Array(buffer);
+        
+        parseBinary();
+        document.getElementById('saveBtn').disabled = false;
+        renderLists();
+    }
+
+    function parseBinary() {
+        const view = new DataView(currentFileData.buffer);
+        const offsetCount = view.getUint32(0, true);
+        const offsets = [];
+        for (let i = 0; i <= offsetCount; i++) {
+            offsets.push(view.getUint32(4 + i * 4, true));
+        }
+
+        // Parse para Texto
+        textBlocks = [];
+        for (let i = 1; i < offsets.length - 1; i++) {
+            const start = offsets[i];
+            const end = offsets[i+1];
+            const slice = currentFileData.slice(start + 1, end - 1);
+            const decoder = new TextDecoder(FILE_ENCODING);
+            textBlocks.push({
+                text: decoder.decode(slice).replace(/\0/g, ''),
+                start: start,
+                end: end,
+                modified: false
+            });
+        }
+
+        // Parse para Imagem (mesma estrutura de blocos)
+        imageBlocks = [];
+        for (let i = 0; i < offsetCount; i++) {
+            imageBlocks.push({
+                data: currentFileData.slice(offsets[i], offsets[i+1]),
+                modified: false
+            });
+        }
+
+        document.getElementById('fileInfo').innerText = `${fileName} | ${offsetCount} Blocos`;
+    }
+
+    // --- UI Rendering ---
+    function renderLists() {
+        if (currentMode === 'text') {
+            const list = document.getElementById('textList');
+            list.innerHTML = textBlocks.map((b, i) => `
+                <div class="list-item ${selectedIndex === i ? 'selected' : ''}" onclick="selectItem(${i})">
+                    ${i}: <span class="${b.modified ? 'modified' : ''}">${b.text.substring(0, 30)}...</span>
+                </div>
+            `).join('');
+        } else {
+            const list = document.getElementById('imageList');
+            list.innerHTML = imageBlocks.map((b, i) => `
+                <div class="list-item ${selectedIndex === i ? 'selected' : ''}" onclick="selectItem(${i})">
+                    Recurso ${i.toString().padStart(3, '0')} ${b.modified ? '<span class="modified">[M]</span>' : ''}
+                </div>
+            `).join('');
+        }
+    }
+
+    function selectItem(index) {
+        selectedIndex = index;
+        renderLists();
+
+        if (currentMode === 'text') {
+            document.getElementById('textEditor').value = textBlocks[index].text;
+        } else {
+            displayImage(index);
+        }
+    }
+
+    // --- Lógica de Texto ---
+    function updateCurrentTextBlock() {
+        if (selectedIndex === -1) return;
+        const newText = document.getElementById('textEditor').value;
+        if (textBlocks[selectedIndex].text !== newText) {
+            textBlocks[selectedIndex].text = newText;
+            textBlocks[selectedIndex].modified = true;
+            // Sincronizar com renderização sem perder foco (opcional)
+        }
+    }
+
+    // --- Lógica de Imagem ---
+    function displayImage(index) {
+        const block = imageBlocks[index].data;
+        const pngSig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        let startPos = -1;
+
+        for (let i = 0; i < block.length - 8; i++) {
+            if (pngSig.every((sig, j) => block[i + j] === sig)) {
+                startPos = i;
+                break;
+            }
+        }
+
+        const imgEl = document.getElementById('imagePreview');
+        const metaEl = document.getElementById('imgMeta');
+
+        if (startPos !== -1) {
+            const pngData = block.slice(startPos);
+            const blob = new Blob([pngData], { type: 'image/png' });
+            imgEl.src = URL.createObjectURL(blob);
+            metaEl.innerText = `PNG encontrado no offset +${startPos} bytes`;
+        } else {
+            imgEl.src = "";
+            metaEl.innerText = "Nenhuma assinatura PNG encontrada.";
+        }
+    }
+
+    async function replaceImage(input) {
+        if (selectedIndex === -1) return;
+        const file = input.files[0];
+        const newPngBuffer = new Uint8Array(await file.arrayBuffer());
+        
+        const originalBlock = imageBlocks[selectedIndex].data;
+        const pngSig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        let startPos = -1;
+
+        for (let i = 0; i < originalBlock.length - 8; i++) {
+            if (pngSig.every((sig, j) => originalBlock[i + j] === sig)) {
+                startPos = i;
+                break;
+            }
+        }
+
+        let newBlock;
+        if (startPos !== -1) {
+            let header = originalBlock.slice(0, startPos);
+            // Simulação da lógica de atualização de tamanho do seu Python (ajuste conforme necessário)
+            if (header.length >= 4) {
+                const sizeView = new DataView(header.buffer, header.byteOffset, header.byteLength);
+                sizeView.setUint32(header.length - 4, newPngBuffer.length + 12, true);
+            }
+            newBlock = new Uint8Array(header.length + newPngBuffer.length);
+            newBlock.set(header);
+            newBlock.set(newPngBuffer, header.length);
+        } else {
+            newBlock = newPngBuffer;
+        }
+
+        imageBlocks[selectedIndex].data = newBlock;
+        imageBlocks[selectedIndex].modified = true;
+        displayImage(selectedIndex);
+        renderLists();
+    }
+
+    // --- Salvamento ---
+    function saveFile() {
+        // Esta lógica reconstrói o arquivo binário com base no modo ativo (Texto ou Imagem)
+        // Semelhante ao rebuild_file do seu Python
+        const blocksToUse = (currentMode === 'text') ? rebuildTextToBinary() : imageBlocks.map(b => b.data);
+        
+        const offsetCount = blocksToUse.length;
+        let headerSize = 4 + (offsetCount + 1) * 4;
+        
+        // Calcular novos offsets com padding de 4 bytes
+        let currentOffset = headerSize;
+        const newOffsets = [];
+        const paddedBlocks = blocksToUse.map(block => {
+            newOffsets.push(currentOffset);
+            const padding = (4 - (block.length % 4)) % 4;
+            const padded = new Uint8Array(block.length + padding);
+            padded.set(block);
+            currentOffset += padded.length;
+            return padded;
+        });
+        newOffsets.push(currentOffset);
+
+        const finalBuffer = new Uint8Array(currentOffset);
+        const view = new DataView(finalBuffer.buffer);
+        
+        view.setUint32(0, offsetCount, true);
+        newOffsets.forEach((off, i) => view.setUint32(4 + i * 4, off, true));
+        
+        let cursor = headerSize;
+        paddedBlocks.forEach(block => {
+            finalBuffer.set(block, cursor);
+            cursor += block.length;
+        });
+
+        const blob = new Blob([finalBuffer], { type: 'application/octet-stream' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = "edited_" + fileName;
+        link.click();
+    }
+
+    function rebuildTextToBinary() {
+        // Lógica específica para reconstruir os blocos de texto com metadados
+        // Nota: Esta parte assume a estrutura original do seu arquivo de texto
+        const blocks = [];
+        // O primeiro bloco costuma ser o metadataBlock no seu script Python
+        blocks.push(imageBlocks[0].data); 
+        
+        textBlocks.forEach(tb => {
+            const encoder = new TextEncoder(); // Simplificado (UTF-8) ou use biblioteca para ISO-8859-1
+            const textBytes = encoder.encode(tb.text);
+            const fullBlock = new Uint8Array(textBytes.length + 2);
+            fullBlock[0] = 0;
+            fullBlock.set(textBytes, 1);
+            fullBlock[fullBlock.length - 1] = 0;
+            blocks.push(fullBlock);
+        });
+        return blocks;
+    }
+</script>
+
+</body>
+</html>
