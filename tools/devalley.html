@@ -5,75 +5,279 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Devalley Web Editor v5.0</title>
     <style>
-        :root {
-            --bg: #f8f9fa;
-            --primary: #4CAF50;
-            --border: #e0e0e0;
-            --text: #333;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; }
-        
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #d4d4d4;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
         /* Toolbar */
-        .toolbar { height: 60px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 10px; }
-        button { padding: 8px 16px; border-radius: 6px; border: 1px solid #d0d0d0; background: white; cursor: pointer; font-weight: 500; }
-        button:hover { background: #f0f0f0; }
-        button.primary { background: var(--primary); color: white; border: none; }
-        #fileInfo { margin-left: auto; color: #666; font-size: 14px; }
+        .toolbar {
+            background-color: #1e1e1e;
+            border-bottom: 1px solid #333;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #444;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.primary {
+            background-color: #0e639c;
+        }
+
+        button.primary:hover:not(:disabled) {
+            background-color: #1177bb;
+        }
+
+        #fileInfo {
+            margin-left: auto;
+            color: #aaaaaa;
+            font-size: 14px;
+        }
 
         /* Tabs */
-        .tabs { display: flex; background: #eee; }
-        .tab { padding: 12px 24px; cursor: pointer; border: none; background: none; font-size: 14px; }
-        .tab.active { background: white; border-bottom: 3px solid var(--primary); font-weight: bold; }
+        .tabs {
+            display: flex;
+            background-color: #1e1e1e;
+            border-bottom: 2px solid #333;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #999;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background-color: #252525;
+            color: #d4d4d4;
+        }
+
+        .tab.active {
+            background-color: #252525;
+            color: #569cd6;
+            border-bottom-color: #569cd6;
+            font-weight: bold;
+        }
 
         /* Main Layout */
-        .content-area { display: none; flex: 1; overflow: hidden; }
-        .content-area.active { display: flex; }
-        
-        .sidebar { width: 300px; border-right: 1px solid var(--border); background: white; overflow-y: auto; }
-        .main-view { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: white; }
+        .content-area {
+            display: none;
+            flex: 1;
+            overflow: hidden;
+        }
 
-        .list-item { padding: 10px 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .list-item:hover { background: #f8f9fa; }
-        .list-item.selected { background: #e3f2fd; color: #1976d2; }
-        .modified { color: #d32f2f; font-weight: bold; }
+        .content-area.active {
+            display: flex;
+        }
 
-        textarea { width: 100%; height: 100%; font-family: 'Consolas', monospace; font-size: 14px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; resize: none; }
-        #imagePreviewContainer { flex: 1; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; background: #fff; position: relative; }
-        #imagePreview { max-width: 100%; max-height: 100%; }
-        
-        .hidden { display: none; }
+        .sidebar {
+            width: 350px;
+            border-right: 1px solid #333;
+            background-color: #1e1e1e;
+            overflow-y: auto;
+        }
+
+        .main-view {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #121212;
+        }
+
+        label {
+            color: #aaaaaa;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .list-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #2a2a2a;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background-color 0.2s;
+            color: #d4d4d4;
+        }
+
+        .list-item:hover {
+            background-color: #252525;
+        }
+
+        .list-item.selected {
+            background-color: #007acc;
+            color: white;
+        }
+
+        .modified {
+            color: #f48771;
+            font-weight: bold;
+        }
+
+        textarea {
+            flex: 1;
+            background-color: #1e1e1e;
+            color: #9cdcfe;
+            border: 1px solid #333;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            padding: 15px;
+            font-size: 14px;
+            resize: none;
+            line-height: 1.6;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #007acc;
+        }
+
+        #imagePreviewContainer {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #1e1e1e;
+            position: relative;
+            min-height: 400px;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        #imgMeta {
+            color: #aaaaaa;
+            font-size: 13px;
+            padding: 10px;
+            background-color: #252525;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Scrollbar */
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 
 <div class="toolbar">
-    <button class="primary" onclick="document.getElementById('fileInput').click()">Abrir Arquivo</button>
-    <button id="saveBtn" onclick="saveFile()" disabled>Salvar Como...</button>
+    <button class="primary" onclick="document.getElementById('fileInput').click()">📂 Abrir Arquivo</button>
+    <button id="saveBtn" onclick="saveFile()" disabled>💾 Salvar Como...</button>
     <input type="file" id="fileInput" class="hidden" onchange="handleFileSelect(this)">
     <div id="fileInfo">Nenhum arquivo carregado</div>
 </div>
 
 <div class="tabs">
-    <div class="tab active" onclick="switchTab('text')">Editor de Texto</div>
-    <div class="tab" onclick="switchTab('image')">Editor de Imagem</div>
+    <div class="tab active" onclick="switchTab('text')">✏️ Editor de Texto</div>
+    <div class="tab" onclick="switchTab('image')">🖼️ Editor de Imagem</div>
 </div>
 
 <div id="textTab" class="content-area active">
-    <div class="sidebar" id="textList"></div>
+    <div class="sidebar" id="textList">
+        <div class="empty-state">
+            <div class="empty-state-icon">📝</div>
+            <p>Nenhum arquivo carregado</p>
+        </div>
+    </div>
     <div class="main-view">
         <label>Conteúdo do Bloco:</label>
-        <textarea id="textEditor" oninput="updateCurrentTextBlock()"></textarea>
+        <textarea id="textEditor" placeholder="Selecione um bloco de texto para editar..." oninput="updateCurrentTextBlock()"></textarea>
     </div>
 </div>
 
 <div id="imageTab" class="content-area">
-    <div class="sidebar" id="imageList"></div>
+    <div class="sidebar" id="imageList">
+        <div class="empty-state">
+            <div class="empty-state-icon">🖼️</div>
+            <p>Nenhum arquivo carregado</p>
+        </div>
+    </div>
     <div class="main-view">
-        <div id="imgMeta" style="color: #666; font-size: 13px;">Selecione um recurso</div>
+        <div id="imgMeta">Selecione um recurso de imagem</div>
         <div id="imagePreviewContainer">
             <img id="imagePreview" alt="">
         </div>
-        <button onclick="document.getElementById('pngInput').click()">Substituir PNG</button>
+        <button onclick="document.getElementById('pngInput').click()">🔄 Substituir PNG</button>
         <input type="file" id="pngInput" class="hidden" accept="image/png" onchange="replaceImage(this)">
     </div>
 </div>
@@ -82,13 +286,12 @@
     let currentFileData = null;
     let textBlocks = [];
     let imageBlocks = [];
-    let currentMode = 'text'; // 'text' ou 'image'
+    let currentMode = 'text';
     let selectedIndex = -1;
     let fileName = "";
 
-    const FILE_ENCODING = "iso-8859-1"; // Correspondente ao seu Python
+    const FILE_ENCODING = "iso-8859-1";
 
-    // --- Lógica de Abas ---
     function switchTab(tab) {
         currentMode = tab;
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -105,7 +308,6 @@
         renderLists();
     }
 
-    // --- Parser Binário ---
     async function handleFileSelect(input) {
         const file = input.files[0];
         if (!file) return;
@@ -126,7 +328,6 @@
             offsets.push(view.getUint32(4 + i * 4, true));
         }
 
-        // Parse para Texto
         textBlocks = [];
         for (let i = 1; i < offsets.length - 1; i++) {
             const start = offsets[i];
@@ -141,7 +342,6 @@
             });
         }
 
-        // Parse para Imagem (mesma estrutura de blocos)
         imageBlocks = [];
         for (let i = 0; i < offsetCount; i++) {
             imageBlocks.push({
@@ -153,22 +353,39 @@
         document.getElementById('fileInfo').innerText = `${fileName} | ${offsetCount} Blocos`;
     }
 
-    // --- UI Rendering ---
     function renderLists() {
         if (currentMode === 'text') {
             const list = document.getElementById('textList');
-            list.innerHTML = textBlocks.map((b, i) => `
-                <div class="list-item ${selectedIndex === i ? 'selected' : ''}" onclick="selectItem(${i})">
-                    ${i}: <span class="${b.modified ? 'modified' : ''}">${b.text.substring(0, 30)}...</span>
-                </div>
-            `).join('');
+            if (textBlocks.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>Nenhum bloco de texto encontrado</p>
+                    </div>
+                `;
+            } else {
+                list.innerHTML = textBlocks.map((b, i) => `
+                    <div class="list-item ${selectedIndex === i ? 'selected' : ''}" onclick="selectItem(${i})">
+                        Bloco ${i}: <span class="${b.modified ? 'modified' : ''}">${b.text.substring(0, 30)}...</span>
+                    </div>
+                `).join('');
+            }
         } else {
             const list = document.getElementById('imageList');
-            list.innerHTML = imageBlocks.map((b, i) => `
-                <div class="list-item ${selectedIndex === i ? 'selected' : ''}" onclick="selectItem(${i})">
-                    Recurso ${i.toString().padStart(3, '0')} ${b.modified ? '<span class="modified">[M]</span>' : ''}
-                </div>
-            `).join('');
+            if (imageBlocks.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🖼️</div>
+                        <p>Nenhum recurso de imagem encontrado</p>
+                    </div>
+                `;
+            } else {
+                list.innerHTML = imageBlocks.map((b, i) => `
+                    <div class="list-item ${selectedIndex === i ? 'selected' : ''}" onclick="selectItem(${i})">
+                        Recurso ${i.toString().padStart(3, '0')} ${b.modified ? '<span class="modified">[Modificado]</span>' : ''}
+                    </div>
+                `).join('');
+            }
         }
     }
 
@@ -183,18 +400,15 @@
         }
     }
 
-    // --- Lógica de Texto ---
     function updateCurrentTextBlock() {
         if (selectedIndex === -1) return;
         const newText = document.getElementById('textEditor').value;
         if (textBlocks[selectedIndex].text !== newText) {
             textBlocks[selectedIndex].text = newText;
             textBlocks[selectedIndex].modified = true;
-            // Sincronizar com renderização sem perder foco (opcional)
         }
     }
 
-    // --- Lógica de Imagem ---
     function displayImage(index) {
         const block = imageBlocks[index].data;
         const pngSig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -214,16 +428,18 @@
             const pngData = block.slice(startPos);
             const blob = new Blob([pngData], { type: 'image/png' });
             imgEl.src = URL.createObjectURL(blob);
-            metaEl.innerText = `PNG encontrado no offset +${startPos} bytes`;
+            metaEl.innerText = `✅ PNG encontrado no offset +${startPos} bytes`;
         } else {
             imgEl.src = "";
-            metaEl.innerText = "Nenhuma assinatura PNG encontrada.";
+            metaEl.innerText = "⚠️ Nenhuma assinatura PNG encontrada neste recurso";
         }
     }
 
     async function replaceImage(input) {
         if (selectedIndex === -1) return;
         const file = input.files[0];
+        if (!file) return;
+        
         const newPngBuffer = new Uint8Array(await file.arrayBuffer());
         
         const originalBlock = imageBlocks[selectedIndex].data;
@@ -240,7 +456,6 @@
         let newBlock;
         if (startPos !== -1) {
             let header = originalBlock.slice(0, startPos);
-            // Simulação da lógica de atualização de tamanho do seu Python (ajuste conforme necessário)
             if (header.length >= 4) {
                 const sizeView = new DataView(header.buffer, header.byteOffset, header.byteLength);
                 sizeView.setUint32(header.length - 4, newPngBuffer.length + 12, true);
@@ -258,16 +473,12 @@
         renderLists();
     }
 
-    // --- Salvamento ---
     function saveFile() {
-        // Esta lógica reconstrói o arquivo binário com base no modo ativo (Texto ou Imagem)
-        // Semelhante ao rebuild_file do seu Python
         const blocksToUse = (currentMode === 'text') ? rebuildTextToBinary() : imageBlocks.map(b => b.data);
         
         const offsetCount = blocksToUse.length;
         let headerSize = 4 + (offsetCount + 1) * 4;
         
-        // Calcular novos offsets com padding de 4 bytes
         let currentOffset = headerSize;
         const newOffsets = [];
         const paddedBlocks = blocksToUse.map(block => {
@@ -297,17 +508,16 @@
         link.href = URL.createObjectURL(blob);
         link.download = "edited_" + fileName;
         link.click();
+        
+        alert('✅ Arquivo salvo com sucesso!');
     }
 
     function rebuildTextToBinary() {
-        // Lógica específica para reconstruir os blocos de texto com metadados
-        // Nota: Esta parte assume a estrutura original do seu arquivo de texto
         const blocks = [];
-        // O primeiro bloco costuma ser o metadataBlock no seu script Python
         blocks.push(imageBlocks[0].data); 
         
         textBlocks.forEach(tb => {
-            const encoder = new TextEncoder(); // Simplificado (UTF-8) ou use biblioteca para ISO-8859-1
+            const encoder = new TextEncoder();
             const textBytes = encoder.encode(tb.text);
             const fullBlock = new Uint8Array(textBytes.length + 2);
             fullBlock[0] = 0;
