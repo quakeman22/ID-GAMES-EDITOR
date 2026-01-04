@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asterix Studio - Multi-Game Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #d4d4d4;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+
+        .sidebar {
+            width: 350px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .main-panel {
+            flex: 1;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h1 {
+            color: #569cd6;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        label {
+            color: #aaaaaa;
+            font-size: 12px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        select, button, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        button {
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #444;
+        }
+
+        button.primary {
+            background-color: #0e639c;
+        }
+
+        button.primary:hover {
+            background-color: #1177bb;
+        }
+
+        .tree {
+            flex: 1;
+            background-color: #252525;
+            border: 1px solid #333;
+            border-radius: 5px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .tree-item {
+            padding: 8px 12px;
+            margin: 2px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            transition: background-color 0.2s;
+        }
+
+        .tree-item:hover {
+            background-color: #333;
+        }
+
+        .tree-item.selected {
+            background-color: #007acc;
+            color: white;
+        }
+
+        .status {
+            font-weight: bold;
+            color: #569cd6;
+            font-size: 16px;
+            padding: 10px;
+            background-color: #252525;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            background-color: #1e1e1e;
+            color: #9cdcfe;
+            border: 1px solid #333;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            padding: 15px;
+            font-size: 14px;
+            resize: none;
+        }
+
+        .image-viewer {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #252525;
+            border-radius: 5px;
+            padding: 20px;
+        }
+
+        .image-viewer img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: block;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .file-label:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>🎮 Asterix Studio</h1>
+            
+            <div>
+                <label>PERFIL DO JOGO:</label>
+                <select id="gameProfile">
+                    <option value="vikings">Asterix e os Vikings</option>
+                    <option value="obelix">Asterix Resgata Obelix</option>
+                </select>
+            </div>
+
+            <div>
+                <input type="file" id="fileInput" accept="*">
+                <label for="fileInput" class="file-label">📂 Abrir Arquivo</label>
+            </div>
+
+            <div class="tree" id="blockTree"></div>
+
+            <button class="primary" id="saveBtn">💾 Salvar Binário Final</button>
+        </div>
+
+        <div class="main-panel">
+            <div class="status" id="status">AGUARDANDO ARQUIVO</div>
+
+            <div class="button-group hidden" id="imageButtons">
+                <button id="replaceImgBtn">🖼️ Substituir</button>
+                <button id="exportImgBtn">💾 Exportar PNG</button>
+            </div>
+
+            <div class="editor-area">
+                <textarea id="textEditor" class="hidden" placeholder="Editor de texto..."></textarea>
+                <div class="image-viewer hidden" id="imageViewer">
+                    <img id="imageDisplay" src="" alt="Preview">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameProfiles = {
+            vikings: {
+                name: "Asterix e os Vikings",
+                headerEnd: 0x278,
+                protecaoInicio: 0x2520,
+                protecaoFim: 0x992C
+            },
+            obelix: {
+                name: "Asterix Resgata Obelix",
+                headerEnd: 0x278,
+                protecaoInicio: 0xCD1,
+                protecaoFim: 0x10D33
+            }
+        };
+
+        let currentProfile = 'vikings';
+        let blocks = [];
+        let currentIndex = -1;
+        let fileData = null;
+        let fixedHeader = null;
+
+        const elements = {
+            gameProfile: document.getElementById('gameProfile'),
+            fileInput: document.getElementById('fileInput'),
+            blockTree: document.getElementById('blockTree'),
+            saveBtn: document.getElementById('saveBtn'),
+            status: document.getElementById('status'),
+            imageButtons: document.getElementById('imageButtons'),
+            textEditor: document.getElementById('textEditor'),
+            imageViewer: document.getElementById('imageViewer'),
+            imageDisplay: document.getElementById('imageDisplay'),
+            replaceImgBtn: document.getElementById('replaceImgBtn'),
+            exportImgBtn: document.getElementById('exportImgBtn')
+        };
+
+        elements.gameProfile.addEventListener('change', (e) => {
+            currentProfile = e.target.value;
+            elements.status.textContent = `PERFIL: ${gameProfiles[currentProfile].name}`;
+        });
+
+        elements.fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadFile(file);
+        });
+
+        elements.textEditor.addEventListener('input', autoSaveText);
+
+        elements.replaceImgBtn.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/png';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) replaceImage(file);
+            };
+            input.click();
+        });
+
+        elements.exportImgBtn.addEventListener('click', exportImage);
+        elements.saveBtn.addEventListener('click', saveFile);
+
+        function loadFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                fileData = new Uint8Array(e.target.result);
+                parseFile(fileData);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseFile(data) {
+            const prof = gameProfiles[currentProfile];
+            fixedHeader = data.slice(0, 4);
+            blocks = [];
+            elements.blockTree.innerHTML = '';
+
+            const pointers = [];
+            for (let i = 4; i < prof.headerEnd; i += 4) {
+                const ptr = readUInt32BE(data, i);
+                if (ptr === 0 || ptr > data.length) break;
+                pointers.push(ptr);
+            }
+
+            pointers.forEach((start, i) => {
+                const end = i + 1 < pointers.length ? pointers[i + 1] : data.length;
+                const raw = data.slice(start, end);
+                
+                let type;
+                let content = raw;
+                
+                if (start >= prof.protecaoInicio && start <= prof.protecaoFim) {
+                    type = 'SISTEMA';
+                } else {
+                    // Verifica se tem 4 bytes de tamanho seguido de PNG
+                    if (raw.length > 12 && isPNG(raw.slice(4))) {
+                        type = 'PNG';
+                        content = raw.slice(4);
+                    } else if (hasSequence(raw.slice(0, 12), [0x51, 0x59, 0x50, 0x36])) {
+                        type = 'QYP6';
+                    } else if (raw.length > 2) {
+                        // Assume TXT se não for nenhum dos anteriores
+                        type = 'TXT';
+                        content = raw.slice(2);
+                    } else {
+                        type = 'SISTEMA';
+                    }
+                }
+
+                blocks.push({ type, content, rawSize: raw.length });
+                addTreeItem(type, raw.length, i);
+            });
+
+            elements.status.textContent = `Carregado: ${blocks.length} blocos`;
+        }
+
+        function hasSequence(arr, seq) {
+            for (let i = 0; i < seq.length; i++) {
+                if (i >= arr.length || arr[i] !== seq[i]) return false;
+            }
+            return true;
+        }
+
+        function isPNG(data) {
+            // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+            const pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+            if (data.length < 8) return false;
+            for (let i = 0; i < 8; i++) {
+                if (data[i] !== pngSignature[i]) return false;
+            }
+            return true;
+        }
+
+        function readUInt32BE(data, offset) {
+            return (data[offset] << 24) | (data[offset + 1] << 16) | 
+                   (data[offset + 2] << 8) | data[offset + 3];
+        }
+
+        function addTreeItem(type, size, index) {
+            const item = document.createElement('div');
+            item.className = 'tree-item';
+            item.innerHTML = `<span>${type}</span><span>${size} bytes</span>`;
+            item.onclick = () => selectBlock(index);
+            elements.blockTree.appendChild(item);
+        }
+
+        function selectBlock(index) {
+            autoSaveText();
+            
+            document.querySelectorAll('.tree-item').forEach((item, i) => {
+                item.classList.toggle('selected', i === index);
+            });
+
+            currentIndex = index;
+            const block = blocks[index];
+
+            elements.textEditor.classList.add('hidden');
+            elements.imageViewer.classList.add('hidden');
+            elements.imageButtons.classList.add('hidden');
+
+            if (block.type === 'PNG') {
+                elements.status.textContent = 'MODO: IMAGEM';
+                elements.imageButtons.classList.remove('hidden');
+                const blob = new Blob([block.content], { type: 'image/png' });
+                elements.imageDisplay.src = URL.createObjectURL(blob);
+                elements.imageViewer.classList.remove('hidden');
+            } else if (block.type === 'TXT') {
+                elements.status.textContent = 'MODO: TEXTO';
+                elements.textEditor.classList.remove('hidden');
+                const decoder = new TextDecoder('utf-8');
+                elements.textEditor.value = decoder.decode(block.content);
+            } else {
+                elements.status.textContent = `MODO: ${block.type} (PROTEGIDO)`;
+            }
+        }
+
+        function autoSaveText() {
+            if (currentIndex !== -1 && blocks[currentIndex].type === 'TXT') {
+                const encoder = new TextEncoder();
+                blocks[currentIndex].content = encoder.encode(elements.textEditor.value);
+            }
+        }
+
+        function replaceImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                blocks[currentIndex].content = new Uint8Array(e.target.result);
+                selectBlock(currentIndex);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function exportImage() {
+            const blob = new Blob([blocks[currentIndex].content], { type: 'image/png' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `img_${currentIndex}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function saveFile() {
+            autoSaveText();
+            const prof = gameProfiles[currentProfile];
+            
+            const pool = [];
+            const ptrs = [];
+            let curr = prof.headerEnd;
+
+            blocks.forEach(b => {
+                ptrs.push(curr);
+                let final;
+                
+                if (b.type === 'SISTEMA' || b.type === 'QYP6') {
+                    final = b.content;
+                } else if (b.type === 'PNG') {
+                    const size = new Uint8Array(4);
+                    new DataView(size.buffer).setUint32(0, b.content.length, false);
+                    final = new Uint8Array([...size, ...b.content]);
+                } else {
+                    const size = new Uint8Array(2);
+                    new DataView(size.buffer).setUint16(0, b.content.length, false);
+                    final = new Uint8Array([...size, ...b.content]);
+                }
+                
+                pool.push(...final);
+                curr += final.length;
+            });
+
+            const output = new Uint8Array(prof.headerEnd + pool.length);
+            output.set(fixedHeader, 0);
+            
+            ptrs.forEach((ptr, i) => {
+                const view = new DataView(output.buffer);
+                view.setUint32(4 + i * 4, ptr, false);
+            });
+
+            output.set(pool, prof.headerEnd);
+
+            const blob = new Blob([output], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'asterix_modificado.bin';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert('Binário reconstruído com sucesso!');
+        }
+    </script>
+</body>
+</html>
